@@ -852,14 +852,14 @@ def get_nice_limits(min_val, max_val):
     else:
         step = 10.0 * power
         
-    # Enforce minimum step size based on magnitude to keep ticks clean and rounded
+    # Enforce a smaller minimum step size based on magnitude to keep ticks clean but granular
     mag = max(abs(min_val), abs(max_val))
     if mag >= 100000:
         step = max(step, 1000.0) # at least 1,000 TL steps for vault
     elif mag >= 1000:
         step = max(step, 10.0)
     elif mag >= 100:
-        step = max(step, 5.0) # at least 5.0 TL steps for interest in hundreds
+        step = max(step, 1.0) # at least 1.0 step for daily interest in hundreds (e.g. 110, 111, 112...)
     elif mag >= 10:
         step = max(step, 1.0)
         
@@ -869,8 +869,14 @@ def get_nice_limits(min_val, max_val):
     if nice_min == nice_max:
         nice_max += step
         
-    # Double check if there are too many ticks
+    # If the range is too narrow (less than 4 steps), expand it symmetrically
     num_ticks = (nice_max - nice_min) / step
+    while num_ticks < 4:
+        nice_min -= step
+        nice_max += step
+        num_ticks = (nice_max - nice_min) / step
+        
+    # Double check if there are too many ticks
     if num_ticks > 12:
         step *= 2
         nice_min = step * math.floor(min_val / step)
@@ -1308,7 +1314,7 @@ def inject_custom_css():
     }
     
     /* Style for Emoji Grid Buttons (WhatsApp style) */
-    div[data-testid="stHorizontalBlock"]:has(.emoji-marker) {
+    div[data-testid="stHorizontalBlock"]:has(.emoji-marker):not(:has(div[data-testid="stHorizontalBlock"]:has(.emoji-marker))) {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: wrap !important;
@@ -1316,7 +1322,7 @@ def inject_custom_css():
         gap: 6px !important;
         width: 100% !important;
     }
-    div[data-testid="stHorizontalBlock"]:has(.emoji-marker) > div[data-testid="stColumn"] {
+    div[data-testid="stHorizontalBlock"]:has(.emoji-marker):not(:has(div[data-testid="stHorizontalBlock"]:has(.emoji-marker))) > div[data-testid="stColumn"] {
         width: 38px !important;
         min-width: 38px !important;
         max-width: 38px !important;
@@ -1325,7 +1331,7 @@ def inject_custom_css():
         margin: 0 !important;
         padding: 0 !important;
     }
-    div[data-testid="stHorizontalBlock"]:has(.emoji-marker) > div[data-testid="stColumn"] button {
+    div[data-testid="stHorizontalBlock"]:has(.emoji-marker):not(:has(div[data-testid="stHorizontalBlock"]:has(.emoji-marker))) > div[data-testid="stColumn"] button {
         font-size: 1.25rem !important;
         padding: 0 !important;
         width: 38px !important;
@@ -1340,17 +1346,17 @@ def inject_custom_css():
         border: 1px solid #E2E8F0 !important;
         transition: all 0.2s ease-in-out !important;
     }
-    div[data-testid="stHorizontalBlock"]:has(.emoji-marker) > div[data-testid="stColumn"] button:hover {
+    div[data-testid="stHorizontalBlock"]:has(.emoji-marker):not(:has(div[data-testid="stHorizontalBlock"]:has(.emoji-marker))) > div[data-testid="stColumn"] button:hover {
         background-color: #E2E8F0 !important;
         transform: scale(1.1) !important;
     }
     
     @media (prefers-color-scheme: dark) {
-        div[data-testid="stHorizontalBlock"]:has(.emoji-marker) > div[data-testid="stColumn"] button {
+        div[data-testid="stHorizontalBlock"]:has(.emoji-marker):not(:has(div[data-testid="stHorizontalBlock"]:has(.emoji-marker))) > div[data-testid="stColumn"] button {
             background-color: #334155 !important;
             border-color: #475569 !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.emoji-marker) > div[data-testid="stColumn"] button:hover {
+        div[data-testid="stHorizontalBlock"]:has(.emoji-marker):not(:has(div[data-testid="stHorizontalBlock"]:has(.emoji-marker))) > div[data-testid="stColumn"] button:hover {
             background-color: #475569 !important;
         }
     }
@@ -1446,7 +1452,7 @@ def inject_custom_css():
         }
 
         /* Emoji selector grid on mobile: force it to stay in a compact flex grid */
-        div[data-testid="stHorizontalBlock"]:has(.emoji-marker) {
+        div[data-testid="stHorizontalBlock"]:has(.emoji-marker):not(:has(div[data-testid="stHorizontalBlock"]:has(.emoji-marker))) {
             display: flex !important;
             flex-direction: row !important;
             flex-wrap: wrap !important;
