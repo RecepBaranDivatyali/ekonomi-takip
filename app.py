@@ -1074,9 +1074,9 @@ def inject_custom_css():
     }
     
     /* Target only action buttons inside transaction rows, category lists, or debt actions */
-    div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.tx-feed-item) button,
-    div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.category-badge) button,
-    div[data-testid="stHorizontalBlock"]:has(.debt-info-card) div[data-testid="stHorizontalBlock"] button {
+    div[data-testid="stHorizontalBlock"]:has(.tx-row-marker) div[data-testid="stColumn"] button,
+    div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) div[data-testid="stColumn"] button,
+    div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button {
         padding: 2px 4px !important;
         min-width: 32px !important;
         min-height: 32px !important;
@@ -1096,38 +1096,55 @@ def inject_custom_css():
         transition: all 0.2s ease-in-out !important;
     }
     
-    div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.tx-feed-item) button:hover,
-    div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.category-badge) button:hover,
-    div[data-testid="stHorizontalBlock"]:has(.debt-info-card) div[data-testid="stHorizontalBlock"] button:hover {
+    div[data-testid="stHorizontalBlock"]:has(.tx-row-marker) div[data-testid="stColumn"] button:hover,
+    div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) div[data-testid="stColumn"] button:hover,
+    div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button:hover {
         background-color: #F1F5F9 !important;
         border-color: #CBD5E1 !important;
         transform: scale(1.1) !important;
     }
     
     @media (prefers-color-scheme: dark) {
-        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.tx-feed-item) button,
-        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.category-badge) button,
-        div[data-testid="stHorizontalBlock"]:has(.debt-info-card) div[data-testid="stHorizontalBlock"] button {
+        div[data-testid="stHorizontalBlock"]:has(.tx-row-marker) div[data-testid="stColumn"] button,
+        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) div[data-testid="stColumn"] button,
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button {
             background-color: #1E293B !important;
             border-color: #334155 !important;
         }
-        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.tx-feed-item) button:hover,
-        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.category-badge) button:hover,
-        div[data-testid="stHorizontalBlock"]:has(.debt-info-card) div[data-testid="stHorizontalBlock"] button:hover {
+        div[data-testid="stHorizontalBlock"]:has(.tx-row-marker) div[data-testid="stColumn"] button:hover,
+        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) div[data-testid="stColumn"] button:hover,
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button:hover {
             background-color: #334155 !important;
             border-color: #475569 !important;
         }
     }
     
-    /* Style for Emoji Grid Buttons */
-    div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.emoji-marker) button {
-        font-size: 1.2rem !important;
-        padding: 4px !important;
+    /* Style for Emoji Grid Buttons (WhatsApp style) */
+    div[data-testid="stHorizontalBlock"]:has(.emoji-marker) {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        justify-content: flex-start !important;
+        gap: 6px !important;
         width: 100% !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has(.emoji-marker) > div[data-testid="stColumn"] {
+        width: 38px !important;
+        min-width: 38px !important;
+        max-width: 38px !important;
+        flex-grow: 0 !important;
+        flex-shrink: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has(.emoji-marker) > div[data-testid="stColumn"] button {
+        font-size: 1.25rem !important;
+        padding: 0 !important;
+        width: 38px !important;
         height: 38px !important;
         min-width: 38px !important;
         min-height: 38px !important;
-        border-radius: 10px !important;
+        border-radius: 8px !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -1135,17 +1152,17 @@ def inject_custom_css():
         border: 1px solid #E2E8F0 !important;
         transition: all 0.2s ease-in-out !important;
     }
-    div[data-testid="stHorizontalBlock"]:has(.emoji-marker) button:hover {
+    div[data-testid="stHorizontalBlock"]:has(.emoji-marker) > div[data-testid="stColumn"] button:hover {
         background-color: #E2E8F0 !important;
         transform: scale(1.1) !important;
     }
     
     @media (prefers-color-scheme: dark) {
-        div[data-testid="stHorizontalBlock"]:has(.emoji-marker) button {
+        div[data-testid="stHorizontalBlock"]:has(.emoji-marker) > div[data-testid="stColumn"] button {
             background-color: #334155 !important;
             border-color: #475569 !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.emoji-marker) button:hover {
+        div[data-testid="stHorizontalBlock"]:has(.emoji-marker) > div[data-testid="stColumn"] button:hover {
             background-color: #475569 !important;
         }
     }
@@ -1240,87 +1257,163 @@ def inject_custom_css():
             margin-bottom: 16px !important;
         }
 
-        /* Emoji selector grid on mobile: force it to stay in a 6-column grid */
-        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.emoji-marker) {
-            display: grid !important;
-            grid-template-columns: repeat(6, 1fr) !important;
+        /* Emoji selector grid on mobile: force it to stay in a compact flex grid */
+        div[data-testid="stHorizontalBlock"]:has(.emoji-marker) {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: wrap !important;
+            justify-content: flex-start !important;
             gap: 6px !important;
         }
-        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.emoji-marker) > div[data-testid="stColumn"] {
+
+        /* Metric cards row layout on mobile: keep in a single row */
+        div[data-testid="stHorizontalBlock"]:has(.metric-marker) {
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: stretch !important;
+            gap: 6px !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.metric-marker) > div[data-testid="stColumn"] {
+            width: 33.333% !important;
+            min-width: 0 !important;
+            flex-grow: 1 !important;
+            flex-shrink: 0 !important;
+            margin: 0 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.metric-marker) .metric-card {
+            padding: 8px 10px !important;
+            min-height: 90px !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.metric-marker) .metric-value {
+            font-size: 1.05rem !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.metric-marker) .metric-title {
+            font-size: 0.62rem !important;
+            letter-spacing: 0px !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.metric-marker) .metric-sub {
+            display: none !important; /* Hide subtexts on mobile to fit text in columns */
+        }
+
+        /* Transaction list row layout on mobile */
+        div[data-testid="stHorizontalBlock"]:has(.tx-row-marker) {
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
+            gap: 6px !important;
+            max-width: 100% !important;
             width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
         }
-
-        /* Transaction row layout on mobile: keep item and action buttons in a single row */
-        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.tx-feed-item) {
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            align-items: center !important;
-            gap: 6px !important;
-        }
-        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.tx-feed-item) > div[data-testid="stColumn"] {
+        div[data-testid="stHorizontalBlock"]:has(.tx-row-marker) div[data-testid="stColumn"] {
             width: auto !important;
             flex-grow: 0 !important;
             flex-shrink: 0 !important;
             margin: 0 !important;
         }
-        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.tx-feed-item) > div[data-testid="stColumn"]:first-child {
+        div[data-testid="stHorizontalBlock"]:has(.tx-row-marker) div[data-testid="stColumn"]:nth-child(1) {
             flex-grow: 1 !important;
             flex-shrink: 1 !important;
             min-width: 0 !important;
+            order: 1 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.tx-row-marker) div[data-testid="stColumn"]:nth-child(2) {
+            order: 2 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.tx-row-marker) div[data-testid="stColumn"]:nth-child(3) {
+            order: 3 !important;
         }
 
-        /* Category row layout on mobile */
-        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.category-badge) {
+        .tx-feed-item {
+            width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
+        }
+
+        .category-badge > span:last-child {
+            max-width: 90px !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+            display: inline-block !important;
+        }
+
+        /* Category list row layout on mobile */
+        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
             align-items: center !important;
             gap: 6px !important;
+            max-width: 100% !important;
+            width: 100% !important;
         }
-        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.category-badge) > div[data-testid="stColumn"] {
+        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) div[data-testid="stColumn"] {
             width: auto !important;
             flex-grow: 0 !important;
             flex-shrink: 0 !important;
             margin: 0 !important;
         }
-        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.category-badge) > div[data-testid="stColumn"]:first-child {
+        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) div[data-testid="stColumn"]:nth-child(1) {
             flex-grow: 1 !important;
             flex-shrink: 1 !important;
             min-width: 0 !important;
+            order: 1 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) div[data-testid="stColumn"]:nth-child(2) {
+            order: 2 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) div[data-testid="stColumn"]:nth-child(3) {
+            order: 3 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) div[data-testid="stColumn"]:nth-child(4) {
+            order: 4 !important;
         }
 
-        /* Debt row layout on mobile */
-        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.debt-info-card) {
+        /* Debt tracking list row layout on mobile: Outer columns */
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
             align-items: center !important;
             gap: 8px !important;
+            max-width: 100% !important;
+            width: 100% !important;
         }
-        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.debt-info-card) > div[data-testid="stColumn"] {
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) > div[data-testid="stColumn"] {
             width: auto !important;
             flex-grow: 0 !important;
             flex-shrink: 0 !important;
             margin: 0 !important;
         }
-        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.debt-info-card) > div[data-testid="stColumn"]:first-child {
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) > div[data-testid="stColumn"]:nth-child(1) {
             flex-grow: 1 !important;
             flex-shrink: 1 !important;
             min-width: 0 !important;
+            order: 1 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) > div[data-testid="stColumn"]:nth-child(2) {
+            order: 2 !important;
         }
 
-        /* Nested columns for debt action buttons on mobile */
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])) {
+        /* Debt tracking list row layout on mobile: Inner columns */
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
             align-items: center !important;
             gap: 6px !important;
         }
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])) > div[data-testid="stColumn"] {
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
             width: auto !important;
             flex-grow: 0 !important;
             flex-shrink: 0 !important;
             margin: 0 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:nth-child(1) {
+            order: 1 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:nth-child(2) {
+            order: 2 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:nth-child(3) {
+            order: 3 !important;
         }
     }
     </style>
@@ -1534,6 +1627,7 @@ if menu_selection == "📊 Dashboard":
     with col1:
         st.markdown(f"""
         <div class="metric-card">
+            <span class="metric-marker"></span>
             <div class="metric-title">🛡️ Faiz İşleyen Tutar</div>
             <div class="metric-value">{earning_base:,.2f} TL</div>
             <div class="metric-sub">Vadesiz Kalan: {vadesiz_limit:,.0f} TL | Faiz: %{rate_today*100:.1f}</div>
@@ -1543,6 +1637,7 @@ if menu_selection == "📊 Dashboard":
     with col2:
         st.markdown(f"""
         <div class="metric-card faiz">
+            <span class="metric-marker"></span>
             <div class="metric-title">📈 Toplam Biriken Faiz</div>
             <div class="metric-value" style="color: #8B5CF6;">{total_interest_earned:,.2f} TL</div>
             <div class="metric-sub">Kazanılan Net Getiri (%17.5 Stopaj Kesintili)</div>
@@ -1556,6 +1651,7 @@ if menu_selection == "📊 Dashboard":
         net_sign = "+" if net_flow >= 0 else ""
         st.markdown(f"""
         <div class="metric-card gider">
+            <span class="metric-marker"></span>
             <div class="metric-title">🗓️ Bu Ayki Net Akış</div>
             <div class="metric-value" style="color: {net_color};">{net_sign}{net_flow:,.2f} TL</div>
             <div class="metric-sub">Gelir: +{m_flow['Gelir']:,.1f} TL | Gider: -{m_flow['Gider']:,.1f} TL</div>
@@ -1564,32 +1660,72 @@ if menu_selection == "📊 Dashboard":
         
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # 3. Chart and Feed Sections
-    col_feed, col_chart = st.columns([4, 5])
+    # 3. Son Yapılan İşlemler (Tam Genişlik & Sayfalamalı)
+    st.markdown("### 🕒 Son Yapılan İşlemler")
+    recent_txs = get_transactions()
     
-    with col_feed:
-        st.markdown("### 🕒 Son Yapılan İşlemler")
-        recent_txs = get_transactions(limit=10)
+    if not recent_txs:
+        st.info("Henüz kaydedilmiş bir işlem bulunmuyor.")
+    else:
+        # Initialize page state
+        if 'dash_tx_page' not in st.session_state:
+            st.session_state.dash_tx_page = 0
+            
+        page_size = 5
+        total_txs = len(recent_txs)
+        total_pages = (total_txs + page_size - 1) // page_size
         
-        if not recent_txs:
-            st.info("Henüz kaydedilmiş bir işlem bulunmuyor.")
-        else:
-            for tx in recent_txs:
-                sign = "+" if tx['type'] == 'Gelir' else "-"
-                amt_color = "#10B981" if tx['type'] == 'Gelir' else "#EF4444"
-                st.markdown(render_tx_row_html(tx, sign, amt_color), unsafe_allow_html=True)
-
-    with col_chart:
+        # Boundary checks
+        if st.session_state.dash_tx_page >= total_pages:
+            st.session_state.dash_tx_page = total_pages - 1
+        if st.session_state.dash_tx_page < 0:
+            st.session_state.dash_tx_page = 0
+            
+        current_page = st.session_state.dash_tx_page
+        start_idx = current_page * page_size
+        end_idx = start_idx + page_size
+        
+        # Display transactions for current page
+        for tx in recent_txs[start_idx:end_idx]:
+            sign = "+" if tx['type'] == 'Gelir' else "-"
+            amt_color = "#10B981" if tx['type'] == 'Gelir' else "#EF4444"
+            st.markdown(render_tx_row_html(tx, sign, amt_color), unsafe_allow_html=True)
+            
+        # Pagination controls
+        if total_pages > 1:
+            p_col1, p_col2, p_col3, p_col4, p_col5 = st.columns([4, 1, 2, 1, 4])
+            with p_col2:
+                if st.button("◀️", key="prev_dash_tx", disabled=(current_page == 0)):
+                    st.session_state.dash_tx_page -= 1
+                    st.rerun()
+            with p_col3:
+                st.markdown(f"<div style='text-align: center; font-weight: 600; font-size: 0.9rem; padding-top: 6px; white-space: nowrap;'>Sayfa {current_page + 1} / {total_pages}</div>", unsafe_allow_html=True)
+            with p_col4:
+                if st.button("▶️", key="next_dash_tx", disabled=(current_page == total_pages - 1)):
+                    st.session_state.dash_tx_page += 1
+                    st.rerun()
+                    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # 4. Grafikler Bölümü (Alt alta / Yan yana)
+    col_chart1, col_chart2 = st.columns(2)
+    
+    with col_chart1:
         st.markdown("### 📈 Kasa Bakiyesi Zaman Serisi")
         if daily_log:
             df_log = pd.DataFrame(daily_log)
             df_log['Tarih'] = pd.to_datetime(df_log['date'])
             df_log = df_log.rename(columns={'vault_after_interest': 'Kasa Bakiyesi (TL)', 'interest_earned': 'Günlük Faiz (TL)'})
-            # Line chart of balance
             st.line_chart(df_log, x='Tarih', y='Kasa Bakiyesi (TL)', color="#3B82F6")
+        else:
+            st.info("Kasa zaman serisini çizmek için yeterli veri bulunamadı. Lütfen bir gelir/gider işlemi ekleyin.")
             
-            # Cumulative interest chart
-            st.markdown("### 💸 Günlük Faiz Getirisi")
+    with col_chart2:
+        st.markdown("### 💸 Günlük Faiz Getirisi")
+        if daily_log:
+            df_log = pd.DataFrame(daily_log)
+            df_log['Tarih'] = pd.to_datetime(df_log['date'])
+            df_log = df_log.rename(columns={'vault_after_interest': 'Kasa Bakiyesi (TL)', 'interest_earned': 'Günlük Faiz (TL)'})
             st.bar_chart(df_log, x='Tarih', y='Günlük Faiz (TL)', color="#8B5CF6")
         else:
             st.info("Kasa zaman serisini çizmek için yeterli veri bulunamadı. Lütfen bir gelir/gider işlemi ekleyin.")
@@ -1838,6 +1974,7 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
                 col_item, col_edit, col_del = st.columns([12, 1, 1])
                 
                 with col_item:
+                    st.markdown('<span class="tx-row-marker"></span>', unsafe_allow_html=True)
                     sign = "+" if tx['type'] == 'Gelir' else "-"
                     amt_color = "#10B981" if tx['type'] == 'Gelir' else "#EF4444"
                     
@@ -1894,8 +2031,6 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
             st.session_state.edit_cat_color_val = cat_color
 
             st.markdown(f"**Rozet Simgesi:** <span style='font-size: 1.3rem; margin-left: 10px;'>{st.session_state.edit_cat_emoji_val}</span>", unsafe_allow_html=True)
-            st.markdown("<div class='emoji-marker'></div>", unsafe_allow_html=True)
-            
             emoji_options = [
                 "🧭", "🏃", "🗺️", "👟", "🏆", "🎓",
                 "🌲", "🏕️", "🪵", "🎒", "🩹", "🏥",
@@ -1907,6 +2042,9 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
             cols = st.columns(6)
             for i, emoji_char in enumerate(emoji_options):
                 col = cols[i % 6]
+                if i == 0:
+                    with col:
+                        st.markdown('<span class="emoji-marker"></span>', unsafe_allow_html=True)
                 is_selected = emoji_char == st.session_state.edit_cat_emoji_val
                 btn_label = f"• {emoji_char} •" if is_selected else emoji_char
                 if col.button(btn_label, key=f"edit_emoji_{emoji_char}"):
@@ -1950,8 +2088,6 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
                 st.session_state.new_cat_emoji = "🧭"
                 
             st.markdown(f"**Rozet Simgesi:** <span style='font-size: 1.3rem; margin-left: 10px;'>{st.session_state.new_cat_emoji}</span>", unsafe_allow_html=True)
-            st.markdown("<div class='emoji-marker'></div>", unsafe_allow_html=True)
-            
             emoji_options = [
                 "🧭", "🏃", "🗺️", "👟", "🏆", "🎓",
                 "🌲", "🏕️", "🪵", "🎒", "🩹", "🏥",
@@ -1963,6 +2099,9 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
             cols = st.columns(6)
             for i, emoji_char in enumerate(emoji_options):
                 col = cols[i % 6]
+                if i == 0:
+                    with col:
+                        st.markdown('<span class="emoji-marker"></span>', unsafe_allow_html=True)
                 is_selected = emoji_char == st.session_state.new_cat_emoji
                 btn_label = f"• {emoji_char} •" if is_selected else emoji_char
                 if col.button(btn_label, key=f"new_emoji_{emoji_char}"):
@@ -1986,14 +2125,36 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
     with col_list:
         st.markdown("### 📋 Mevcut Kategoriler")
         cats = get_categories()
-        
         if not cats:
             st.info("Kayıtlı kategori bulunamadı. Sol taraftaki formu kullanarak yeni kategoriler ekleyebilirsiniz.")
         else:
+            # Deletion confirmation
+            if st.session_state.get('confirm_delete_cat_id'):
+                del_id = st.session_state.confirm_delete_cat_id
+                del_c = next((c for c in cats if c['id'] == del_id), None)
+                if del_c:
+                    st.warning(f"⚠️ **Seçilen kategoriyi silmek istediğinize emin misiniz?**\n\n**Bu kategori silinirse bağlı TÜM işlemler de silinecektir!**\n\nKategori: **{del_c['emoji']} {del_c['name']}**")
+                    col_yes, col_no = st.columns([1, 1])
+                    with col_yes:
+                        if st.button("Evet, Sil", key="btn_confirm_cat_del_yes", type="primary"):
+                            delete_category(del_id)
+                            if st.session_state.get('edit_cat_id') == del_id:
+                                st.session_state.edit_cat_id = None
+                            st.session_state.confirm_delete_cat_id = None
+                            st.toast("Kategori silindi, faizler ve bakiyeler yeniden hesaplandı.", icon="🗑️")
+                            st.rerun()
+                    with col_no:
+                        if st.button("İptal Et", key="btn_confirm_cat_del_no"):
+                            st.session_state.confirm_delete_cat_id = None
+                            st.rerun()
+                else:
+                    st.session_state.confirm_delete_cat_id = None
+
             for c in cats:
                 col_badge, col_type_lbl, col_edit, col_del = st.columns([6, 2, 1, 1])
                 
                 with col_badge:
+                    st.markdown('<span class="cat-row-marker"></span>', unsafe_allow_html=True)
                     st.markdown(get_category_badge_html(c['emoji'], c['name'], c['color']), unsafe_allow_html=True)
                 
                 with col_type_lbl:
@@ -2007,10 +2168,7 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
                         
                 with col_del:
                     if st.button("🗑️", key=f"del_cat_{c['id']}", help="Bu kategori silinirse bağlı TÜM işlemler de silinecektir!"):
-                        delete_category(c['id'])
-                        if st.session_state.get('edit_cat_id') == c['id']:
-                            st.session_state.edit_cat_id = None
-                        st.toast("Kategori silindi, faizler ve bakiyeler yeniden hesaplandı.", icon="🗑️")
+                        st.session_state.confirm_delete_cat_id = c['id']
                         st.rerun()
 
 
@@ -2207,7 +2365,7 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                 else:
                     due_date_str = debt_due_date.strftime('%Y-%m-%d') if has_due_date else None
                     add_debt(debt_type, debt_amount, debt_name.strip(), due_date_str, "Bekliyor", selected_cat_id)
-                    st.success("Borç kaydı başarıyla oluşturuldu!")
+                    st.toast("Borç kaydı başarıyla eklendi!", icon="➕")
                     st.rerun()
                     
     with col_list:
@@ -2215,15 +2373,39 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
         if not all_debts:
             st.info("Kayıtlı herhangi bir borç bulunamadı.")
         else:
+            # Deletion confirmation
+            if st.session_state.get('confirm_delete_debt_id'):
+                del_id = st.session_state.confirm_delete_debt_id
+                del_d = next((d for d in all_debts if d['id'] == del_id), None)
+                if del_d:
+                    st.warning(f"⚠️ **Seçilen borç kaydını silmek istediğinize emin misiniz?**\n\n**{del_d['name']} | {del_d['amount']:,.2f} TL | {del_d['type']}**")
+                    col_yes, col_no = st.columns([1, 1])
+                    with col_yes:
+                        if st.button("Evet, Sil", key="btn_confirm_debt_del_yes", type="primary"):
+                            delete_debt(del_id)
+                            if st.session_state.get('edit_debt_id') == del_id:
+                                st.session_state.edit_debt_id = None
+                            st.session_state.confirm_delete_debt_id = None
+                            st.toast("Borç kaydı silindi.", icon="🗑️")
+                            st.rerun()
+                    with col_no:
+                        if st.button("İptal Et", key="btn_confirm_debt_del_no"):
+                            st.session_state.confirm_delete_debt_id = None
+                            st.rerun()
+                else:
+                    st.session_state.confirm_delete_debt_id = None
+
             tab_pending, tab_paid = st.tabs(["⏳ Bekleyen Borçlar", "✅ Ödenmiş Borçlar"])
             
             with tab_pending:
+                pending_debts = [d for d in all_debts if d['status'] == 'Bekliyor']
                 if not pending_debts:
                     st.success("Bekleyen borcunuz bulunmuyor! Her şey dengede.")
                 else:
                     for d in pending_debts:
                         col_info, col_actions = st.columns([6, 2])
                         with col_info:
+                            st.markdown('<span class="debt-row-marker"></span>', unsafe_allow_html=True)
                             color = "#EF4444" if d['type'] == 'Verilecek' else "#10B981"
                             type_lbl = "🔴 Verilecek" if d['type'] == 'Verilecek' else "🟢 Alınacak"
                             vade_lbl = f" | 📅 Vade: {d['due_date']}" if d['due_date'] else " | 📅 Vade: Belirsiz"
@@ -2263,10 +2445,7 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                                     st.rerun()
                             with c_del:
                                 if st.button("🗑️", key=f"del_debt_{d['id']}", help="Borcu Sil"):
-                                    delete_debt(d['id'])
-                                    if st.session_state.get('edit_debt_id') == d['id']:
-                                        st.session_state.edit_debt_id = None
-                                    st.toast("Borç kaydı silindi.", icon="🗑️")
+                                    st.session_state.confirm_delete_debt_id = d['id']
                                     st.rerun()
                                     
             with tab_paid:
@@ -2277,6 +2456,7 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                     for d in paid_debts:
                         col_info, col_actions = st.columns([6, 2])
                         with col_info:
+                            st.markdown('<span class="debt-row-marker"></span>', unsafe_allow_html=True)
                             color = "#94A3B8"
                             type_lbl = "Verilecek" if d['type'] == 'Verilecek' else "Alınacak"
                             
@@ -2310,10 +2490,7 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                                     st.rerun()
                             with c_del:
                                 if st.button("🗑️", key=f"del_paid_debt_{d['id']}", help="Kayıttan Sil"):
-                                    delete_debt(d['id'])
-                                    if st.session_state.get('edit_debt_id') == d['id']:
-                                        st.session_state.edit_debt_id = None
-                                    st.toast("Borç kaydı silindi.", icon="🗑️")
+                                    st.session_state.confirm_delete_debt_id = d['id']
                                     st.rerun()
 
 
