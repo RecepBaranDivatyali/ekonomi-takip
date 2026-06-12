@@ -2414,7 +2414,7 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
             del_id = st.session_state.confirm_delete_id
             del_tx = next((t for t in all_txs if t['id'] == del_id), None)
             if del_tx:
-                st.warning(f"⚠️ **Seçilen işlemi silmek istediğinize emin misiniz?**\n\n**{del_tx['date']} | {del_tx['category_emoji']} {del_tx['category_name']} | {del_tx['description'] or ''} | {del_tx['amount']:,.2f} TL**")
+                st.warning(f"⚠️ **Seçilen işlemi silmek istediğinize emin misiniz?**\n\n**{del_tx['date']} | {del_tx['emoji']} {del_tx['category_name']} | {del_tx['description'] or ''} | {del_tx['amount']:,.2f} TL**")
                 col_yes, col_no = st.columns([1, 1])
                 with col_yes:
                     if st.button("Evet, Sil", key="btn_confirm_del_yes", type="primary"):
