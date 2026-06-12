@@ -2141,26 +2141,56 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
         if not filtered_txs:
             st.info("Aramanıza uygun işlem bulunamadı.")
         else:
-            # Custom styled list with Delete and Edit Actions
+            # Custom styled list with Delete and Edit Actions (Accordion details card styling)
             for tx in filtered_txs:
-                col_item, col_actions = st.columns([12, 2])
+                sign = "+" if tx['type'] == 'Gelir' else "-"
+                tx_desc_text = tx['description'] if tx['description'] else tx['category_name']
+                amt_color_prefix = ":green" if tx['type'] == 'Gelir' else ":red"
+                amt_formatted = f"{sign} {tx['amount']:,.2f} TL"
+                amt_text = f"{amt_color_prefix}[{amt_formatted}]"
                 
-                with col_item:
-                    st.markdown('<span class="tx-card-marker"></span>', unsafe_allow_html=True)
-                    sign = "+" if tx['type'] == 'Gelir' else "-"
-                    amt_color = "#10B981" if tx['type'] == 'Gelir' else "#EF4444"
+                if tx['category_name']:
+                    st.markdown(f"""
+                    <style>
+                    div[data-testid="stExpander"]:has(#tx-id-{tx['id']}) > details > summary em {{
+                        background-color: {tx['color']}15 !important;
+                        color: {tx['color']} !important;
+                        border: 1px solid {tx['color']}30 !important;
+                        font-style: normal !important;
+                        padding: 2px 8px !important;
+                        border-radius: 8px !important;
+                        font-size: 0.72rem !important;
+                        font-weight: 600 !important;
+                        display: inline-flex !important;
+                        align-items: center !important;
+                        gap: 4px !important;
+                        white-space: nowrap !important;
+                        margin-right: 6px !important;
+                    }}
+                    </style>
+                    """, unsafe_allow_html=True)
+                    cat_prefix = f"_{tx['emoji']} {tx['category_name']}_ · "
+                else:
+                    cat_prefix = ""
                     
-                    st.markdown(render_tx_row_html(tx, sign, amt_color, extra_style="margin-bottom: 0;"), unsafe_allow_html=True)
+                with st.expander(f"{cat_prefix}{tx_desc_text}  —  {amt_text}  ·  📅 {tx['date']}", expanded=False):
+                    st.markdown(f'<div id="tx-id-{tx["id"]}"></div>', unsafe_allow_html=True)
+                    tx_type_lbl = "🟢 Gelir" if tx['type'] == 'Gelir' else "🔴 Gider"
+                    time_lbl = f" | 🕒 Saat: {tx['time_range']}" if tx.get('time_range') else " | 🕒 Saat: Belirsiz"
                     
-                with col_actions:
-                    st.markdown('<span class="tx-actions-marker"></span>', unsafe_allow_html=True)
+                    st.markdown(
+                        f"<div style='font-size: 0.82rem; color: #64748B; margin-bottom: 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px;'>"
+                        f"  <span>{tx_type_lbl}{time_lbl}</span>"
+                        f"</div>",
+                        unsafe_allow_html=True
+                    )
                     c_edit, c_del = st.columns(2)
                     with c_edit:
-                        if st.button("✏️", key=f"edit_tx_{tx['id']}", help="İşlemi Düzenle"):
+                        if st.button("✏️ Düzenle", key=f"edit_tx_btn_{tx['id']}", help="İşlemi Düzenle", use_container_width=True):
                             st.session_state.edit_tx_id = tx['id']
                             st.rerun()
                     with c_del:
-                        if st.button("🗑️", key=f"del_tx_{tx['id']}", help="İşlemi Sil"):
+                        if st.button("🗑️ Sil", key=f"del_tx_btn_{tx['id']}", help="İşlemi Sil", use_container_width=True):
                             st.session_state.confirm_delete_id = tx['id']
                             st.rerun()
 
