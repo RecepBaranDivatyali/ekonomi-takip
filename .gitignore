@@ -1,0 +1,24 @@
+# Database file (VERY IMPORTANT: Keep local database private)
+ekonomi.db
+*.db
+*.sqlite
+
+# Python cache and temporary files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+.env
+
+# Streamlit secrets (Keep API keys private)
+.streamlit/secrets.toml
+.streamlit/config.toml
+
+# IDE settings
+.idea/
+.vscode/
