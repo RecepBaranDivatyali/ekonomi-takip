@@ -2511,7 +2511,8 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                         # Expander label: shows key info, click to open buttons
                         exp_label = f"**{d['name']}** &nbsp;&nbsp; _{type_lbl}{vade_lbl}{cat_text}_"
                         
-                        with st.expander(f"{d['name']}  —  {d['amount']:,.2f} TL  {type_lbl.split()[0]}", expanded=False):
+                        cat_prefix = f"{d['category_emoji']} {d['category_name']}  ·  " if d['category_name'] else ""
+                        with st.expander(f"{cat_prefix}{d['name']}  —  {d['amount']:,.2f} TL  {type_lbl.split()[0]}", expanded=False):
                             # Card detail row inside expander
                             if d['category_name']:
                                 cat_badge = f"<span style='background-color: {d['category_color']}15; color: {d['category_color']}; padding: 2px 8px; border-radius: 8px; font-weight: 600; font-size: 0.75rem; border: 1px solid {d['category_color']}30; display: inline-flex; align-items: center; gap: 4px;'><span style='font-size: 0.8rem;'>{d['category_emoji']}</span><span>{d['category_name']}</span></span>"
@@ -2551,7 +2552,8 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                         color = "#94A3B8"
                         type_lbl = "Verilecek" if d['type'] == 'Verilecek' else "Alınacak"
                         
-                        with st.expander(f"✅ {d['name']}  —  {d['amount']:,.2f} TL  ({type_lbl})", expanded=False):
+                        cat_prefix = f"{d['category_emoji']} {d['category_name']}  ·  " if d['category_name'] else ""
+                        with st.expander(f"✅ {cat_prefix}{d['name']}  —  {d['amount']:,.2f} TL  ({type_lbl})", expanded=False):
                             if d['category_name']:
                                 cat_badge = f"<span style='background-color: {d['category_color']}15; color: {d['category_color']}; padding: 2px 8px; border-radius: 8px; font-weight: 600; font-size: 0.75rem; border: 1px solid {d['category_color']}30; display: inline-flex; align-items: center; gap: 4px;'><span style='font-size: 0.8rem;'>{d['category_emoji']}</span><span>{d['category_name']}</span></span>"
                             else:
