@@ -1077,7 +1077,7 @@ def inject_custom_css():
     /* Target only action buttons inside transaction rows, category lists, or debt actions */
     div[data-testid="stHorizontalBlock"]:has(.tx-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] button,
     div[data-testid="stHorizontalBlock"]:has(.cat-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] button,
-    div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button {
+    div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button {
         padding: 2px 4px !important;
         min-width: 32px !important;
         min-height: 32px !important;
@@ -1099,7 +1099,7 @@ def inject_custom_css():
     
     div[data-testid="stHorizontalBlock"]:has(.tx-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] button:hover,
     div[data-testid="stHorizontalBlock"]:has(.cat-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] button:hover,
-    div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button:hover {
+    div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button:hover {
         background-color: #F1F5F9 !important;
         border-color: #CBD5E1 !important;
         transform: scale(1.1) !important;
@@ -1108,13 +1108,13 @@ def inject_custom_css():
     @media (prefers-color-scheme: dark) {
         div[data-testid="stHorizontalBlock"]:has(.tx-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] button,
         div[data-testid="stHorizontalBlock"]:has(.cat-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] button,
-        div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button {
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button {
             background-color: #1E293B !important;
             border-color: #334155 !important;
         }
         div[data-testid="stHorizontalBlock"]:has(.tx-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] button:hover,
         div[data-testid="stHorizontalBlock"]:has(.cat-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] button:hover,
-        div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button:hover {
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button:hover {
             background-color: #334155 !important;
             border-color: #475569 !important;
         }
@@ -1319,6 +1319,20 @@ def inject_custom_css():
             flex-shrink: 1 !important;
             min-width: 0 !important;
         }
+        
+        /* Transaction list inner columns containing edit/delete buttons side-by-side on mobile */
+        div[data-testid="stHorizontalBlock"]:has(.tx-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] {
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
+            gap: 6px !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.tx-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
+            width: auto !important;
+            flex-grow: 0 !important;
+            flex-shrink: 0 !important;
+            margin: 0 !important;
+        }
 
         .tx-feed-item {
             width: 100% !important;
@@ -1332,6 +1346,16 @@ def inject_custom_css():
             text-overflow: ellipsis !important;
             white-space: nowrap !important;
             display: inline-block !important;
+        }
+
+        /* Category Management layout on mobile: stack Yeni Kategori Oluştur on top of Mevcut Kategoriler */
+        div[data-testid="stHorizontalBlock"]:has(.cat-page-marker) {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 24px !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.cat-page-marker) > div[data-testid="stColumn"] {
+            width: 100% !important;
         }
 
         /* Category list row layout on mobile */
@@ -1355,35 +1379,31 @@ def inject_custom_css():
             min-width: 0 !important;
         }
 
-        /* Debt tracking list row layout on mobile: Outer columns */
-        div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) {
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            align-items: center !important;
+        /* Debt tracking list row layout on mobile: Outer columns stacked vertically */
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) {
+            flex-direction: column !important;
+            align-items: stretch !important;
             gap: 8px !important;
             max-width: 100% !important;
             width: 100% !important;
         }
-        div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) > div[data-testid="stColumn"] {
-            width: auto !important;
-            flex-grow: 0 !important;
-            flex-shrink: 0 !important;
-            margin: 0 !important;
-        }
-        div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) > div[data-testid="stColumn"]:has(.debt-row-marker) {
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) > div[data-testid="stColumn"] {
+            width: 100% !important;
             flex-grow: 1 !important;
             flex-shrink: 1 !important;
-            min-width: 0 !important;
+            margin: 0 !important;
         }
 
-        /* Debt tracking list row layout on mobile: Inner columns */
-        div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] {
+        /* Debt tracking list inner columns: buttons aligned side-by-side and centered */
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
+            justify-content: center !important;
             align-items: center !important;
-            gap: 6px !important;
+            gap: 12px !important;
+            width: 100% !important;
         }
-        div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
+        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
             width: auto !important;
             flex-grow: 0 !important;
             flex-shrink: 0 !important;
@@ -1521,17 +1541,12 @@ menu_options = [
     "🤝 Borç Takip Sistemi", 
     "⚙️ Faiz & Geçmişi Düzenle"
 ]
-try:
-    default_idx = menu_options.index(st.session_state.menu_selection)
-except ValueError:
-    default_idx = 0
 
 menu_selection = st.sidebar.radio(
     "Gitmek İstediğiniz Sayfa",
     menu_options,
-    index=default_idx
+    key="menu_selection"
 )
-st.session_state.menu_selection = menu_selection
 
 st.sidebar.markdown("---")
 st.sidebar.info(
@@ -1945,7 +1960,7 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
         else:
             # Custom styled list with Delete and Edit Actions
             for tx in filtered_txs:
-                col_item, col_edit, col_del = st.columns([12, 1, 1])
+                col_item, col_actions = st.columns([12, 2])
                 
                 with col_item:
                     st.markdown('<span class="tx-row-marker"></span>', unsafe_allow_html=True)
@@ -1954,15 +1969,16 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
                     
                     st.markdown(render_tx_row_html(tx, sign, amt_color, extra_style="margin-bottom: 0;"), unsafe_allow_html=True)
                     
-                with col_edit:
-                    if st.button("✏️", key=f"edit_tx_{tx['id']}", help="İşlemi Düzenle"):
-                        st.session_state.edit_tx_id = tx['id']
-                        st.rerun()
-                        
-                with col_del:
-                    if st.button("🗑️", key=f"del_tx_{tx['id']}", help="İşlemi Sil"):
-                        st.session_state.confirm_delete_id = tx['id']
-                        st.rerun()
+                with col_actions:
+                    c_edit, c_del = st.columns(2)
+                    with c_edit:
+                        if st.button("✏️", key=f"edit_tx_{tx['id']}", help="İşlemi Düzenle"):
+                            st.session_state.edit_tx_id = tx['id']
+                            st.rerun()
+                    with c_del:
+                        if st.button("🗑️", key=f"del_tx_{tx['id']}", help="İşlemi Sil"):
+                            st.session_state.confirm_delete_id = tx['id']
+                            st.rerun()
 
 
 elif menu_selection == "🏷️ Kategori Yönetimi":
@@ -1989,6 +2005,7 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
                 edit_cat = dict(row)
             
     with col_add:
+        st.markdown('<span class="cat-page-marker"></span>', unsafe_allow_html=True)
         if edit_cat:
             st.markdown(f"### ✏️ Kategoriyi Düzenle (ID: #{edit_cat['id']})")
             cat_name = st.text_input("Kategori Adı", value=edit_cat['name'], key="edit_cat_name")
