@@ -2065,13 +2065,25 @@ if menu_selection == "📊 Dashboard":
             start_date = df_log['Tarih'].min()
             end_date = df_log['Tarih'].max()
             
+            # Generate X-axis ticks (3 or 4 dates)
+            delta_days = (end_date - start_date).days
+            if delta_days >= 3:
+                t1 = start_date + timedelta(days=delta_days // 3)
+                t2 = start_date + timedelta(days=(2 * delta_days) // 3)
+                x_ticks = [start_date, t1, t2, end_date]
+            elif delta_days == 2:
+                mid_date = start_date + timedelta(days=1)
+                x_ticks = [start_date, mid_date, end_date]
+            else:
+                x_ticks = [start_date, end_date]
+            
             line_chart = alt.Chart(df_log).mark_line(
                 color='#3B82F6', 
                 strokeWidth=3,
                 point=alt.OverlayMarkDef(color='#3B82F6', size=40)
             ).encode(
                 x=alt.X('Tarih:T', title=None, axis=alt.Axis(
-                    values=[start_date, end_date], 
+                    values=x_ticks, 
                     format='%Y-%m-%d', 
                     labelAngle=0,
                     grid=True
@@ -2110,17 +2122,28 @@ if menu_selection == "📊 Dashboard":
             start_date = df_log['Tarih'].min()
             end_date = df_log['Tarih'].max()
             
-            bar_chart = alt.Chart(df_log).mark_bar(
-                color='#8B5CF6',
-                size=12,
-                cornerRadiusTopLeft=4,
-                cornerRadiusTopRight=4
+            # Generate X-axis ticks (3 or 4 dates)
+            delta_days = (end_date - start_date).days
+            if delta_days >= 3:
+                t1 = start_date + timedelta(days=delta_days // 3)
+                t2 = start_date + timedelta(days=(2 * delta_days) // 3)
+                x_ticks = [start_date, t1, t2, end_date]
+            elif delta_days == 2:
+                mid_date = start_date + timedelta(days=1)
+                x_ticks = [start_date, mid_date, end_date]
+            else:
+                x_ticks = [start_date, end_date]
+            
+            interest_chart = alt.Chart(df_log).mark_line(
+                color='#8B5CF6', 
+                strokeWidth=3,
+                point=alt.OverlayMarkDef(color='#8B5CF6', size=40)
             ).encode(
                 x=alt.X('Tarih:T', title=None, axis=alt.Axis(
-                    values=[start_date, end_date], 
+                    values=x_ticks, 
                     format='%Y-%m-%d', 
                     labelAngle=0,
-                    grid=False
+                    grid=True
                 )),
                 y=alt.Y('daily_interest:Q', title=None, scale=alt.Scale(domain=[nice_min, nice_max]), axis=alt.Axis(
                     values=y_ticks,
@@ -2131,7 +2154,7 @@ if menu_selection == "📊 Dashboard":
             ).configure_view(
                 strokeWidth=0
             )
-            st.altair_chart(bar_chart, use_container_width=True)
+            st.altair_chart(interest_chart, use_container_width=True)
         else:
             st.info("Kasa zaman serisini çizmek için yeterli veri bulunamadı. Lütfen bir gelir/gider işlemi ekleyin.")
 
