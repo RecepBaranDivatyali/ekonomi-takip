@@ -1313,6 +1313,23 @@ def inject_custom_css():
         }
     }
     
+    /* Keep color and emoji columns side-by-side and vertically aligned */
+    div[data-testid="stHorizontalBlock"]:has(.cat-color-emoji-marker) {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: flex-end !important;
+        gap: 12px !important;
+        width: 100% !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has(.cat-color-emoji-marker) > div[data-testid="stColumn"] {
+        width: 50% !important;
+        min-width: 0 !important;
+        flex-grow: 1 !important;
+        flex-shrink: 1 !important;
+        margin: 0 !important;
+    }
+    
     /* Style for Emoji Grid Buttons (WhatsApp style) */
     div[data-testid="stHorizontalBlock"]:has(.emoji-marker):not(:has(div[data-testid="stHorizontalBlock"]:has(.emoji-marker))) {
         display: flex !important;
@@ -2557,29 +2574,33 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
                 st.session_state.edit_cat_id_current = edit_cat['id']
                 st.session_state.edit_cat_emoji_val = edit_cat['emoji']
                 
-            cat_color = st.color_picker("Rozet Rengi (Hex)", value=st.session_state.edit_cat_color_val, key="edit_cat_color_picker")
-            st.session_state.edit_cat_color_val = cat_color
-
-            with st.expander(f"Rozet Simgesi Seç: {st.session_state.edit_cat_emoji_val}", expanded=False):
-                emoji_options = [
-                    "🧭", "🏃", "🗺️", "👟", "🏆", "🎓",
-                    "🌲", "🏕️", "🪵", "🎒", "🩹", "🏥",
-                    "🍕", "🥤", "🍽️", "👕", "🏠", "🚗",
-                    "🪙", "💰", "💵", "💳", "🤝", "🛒",
-                    "✈️", "🍿", "🎮", "🐾", "🎁", "🛠️"
-                ]
-                
-                cols = st.columns(6)
-                for i, emoji_char in enumerate(emoji_options):
-                    col = cols[i % 6]
-                    if i == 0:
-                        with col:
-                            st.markdown('<span class="emoji-marker"></span>', unsafe_allow_html=True)
-                    is_selected = emoji_char == st.session_state.edit_cat_emoji_val
-                    btn_label = f"• {emoji_char} •" if is_selected else emoji_char
-                    if col.button(btn_label, key=f"edit_emoji_{emoji_char}"):
-                        st.session_state.edit_cat_emoji_val = emoji_char
-                        st.rerun()
+            st.markdown('<span class="cat-color-emoji-marker"></span>', unsafe_allow_html=True)
+            col_color, col_emoji = st.columns([1, 1])
+            with col_color:
+                cat_color = st.color_picker("Kategori Rengi", value=st.session_state.edit_cat_color_val, key="edit_cat_color_picker")
+                st.session_state.edit_cat_color_val = cat_color
+            with col_emoji:
+                st.markdown("<div style='margin-bottom: 8px; font-weight: 500; font-size: 0.88rem;'>Kategori Simgesi</div>", unsafe_allow_html=True)
+                with st.expander(st.session_state.edit_cat_emoji_val, expanded=False):
+                    emoji_options = [
+                        "🧭", "🏃", "🗺️", "👟", "🏆", "🎓",
+                        "🌲", "🏕️", "🪵", "🎒", "🩹", "🏥",
+                        "🍕", "🥤", "🍽️", "👕", "🏠", "🚗",
+                        "🪙", "💰", "💵", "💳", "🤝", "🛒",
+                        "✈️", "🍿", "🎮", "🐾", "🎁", "🛠️"
+                    ]
+                    
+                    cols = st.columns(6)
+                    for i, emoji_char in enumerate(emoji_options):
+                        col = cols[i % 6]
+                        if i == 0:
+                            with col:
+                                st.markdown('<span class="emoji-marker"></span>', unsafe_allow_html=True)
+                        is_selected = emoji_char == st.session_state.edit_cat_emoji_val
+                        btn_label = f"• {emoji_char} •" if is_selected else emoji_char
+                        if col.button(btn_label, key=f"edit_emoji_{emoji_char}"):
+                            st.session_state.edit_cat_emoji_val = emoji_char
+                            st.rerun()
                     
             col_btn1, col_btn2 = st.columns([1, 1])
             with col_btn1:
@@ -2611,32 +2632,37 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
                     st.session_state.last_cat_type = cat_type
                     st.session_state.new_cat_color = "#3B82F6" if cat_type == "Gelir" else "#EF4444"
                 
-            cat_color = st.color_picker("Rozet Rengi (Hex)", value=st.session_state.new_cat_color, key="new_cat_color_picker")
-            st.session_state.new_cat_color = cat_color
+            st.markdown('<span class="cat-color-emoji-marker"></span>', unsafe_allow_html=True)
+            col_color, col_emoji = st.columns([1, 1])
+            with col_color:
+                cat_color = st.color_picker("Kategori Rengi", value=st.session_state.new_cat_color, key="new_cat_color_picker")
+                st.session_state.new_cat_color = cat_color
 
             if "new_cat_emoji" not in st.session_state:
                 st.session_state.new_cat_emoji = "🧭"
                 
-            with st.expander(f"Rozet Simgesi Seç: {st.session_state.new_cat_emoji}", expanded=False):
-                emoji_options = [
-                    "🧭", "🏃", "🗺️", "👟", "🏆", "🎓",
-                    "🌲", "🏕️", "🪵", "🎒", "🩹", "🏥",
-                    "🍕", "🥤", "🍽️", "👕", "🏠", "🚗",
-                    "🪙", "💰", "💵", "💳", "🤝", "🛒",
-                    "✈️", "🍿", "🎮", "🐾", "🎁", "🛠️"
-                ]
-                
-                cols = st.columns(6)
-                for i, emoji_char in enumerate(emoji_options):
-                    col = cols[i % 6]
-                    if i == 0:
-                        with col:
-                            st.markdown('<span class="emoji-marker"></span>', unsafe_allow_html=True)
-                    is_selected = emoji_char == st.session_state.new_cat_emoji
-                    btn_label = f"• {emoji_char} •" if is_selected else emoji_char
-                    if col.button(btn_label, key=f"new_emoji_{emoji_char}"):
-                        st.session_state.new_cat_emoji = emoji_char
-                        st.rerun()
+            with col_emoji:
+                st.markdown("<div style='margin-bottom: 8px; font-weight: 500; font-size: 0.88rem;'>Kategori Simgesi</div>", unsafe_allow_html=True)
+                with st.expander(st.session_state.new_cat_emoji, expanded=False):
+                    emoji_options = [
+                        "🧭", "🏃", "🗺️", "👟", "🏆", "🎓",
+                        "🌲", "🏕️", "🪵", "🎒", "🩹", "🏥",
+                        "🍕", "🥤", "🍽️", "👕", "🏠", "🚗",
+                        "🪙", "💰", "💵", "💳", "🤝", "🛒",
+                        "✈️", "🍿", "🎮", "🐾", "🎁", "🛠️"
+                    ]
+                    
+                    cols = st.columns(6)
+                    for i, emoji_char in enumerate(emoji_options):
+                        col = cols[i % 6]
+                        if i == 0:
+                            with col:
+                                st.markdown('<span class="emoji-marker"></span>', unsafe_allow_html=True)
+                        is_selected = emoji_char == st.session_state.new_cat_emoji
+                        btn_label = f"• {emoji_char} •" if is_selected else emoji_char
+                        if col.button(btn_label, key=f"new_emoji_{emoji_char}"):
+                            st.session_state.new_cat_emoji = emoji_char
+                            st.rerun()
                     
             submitted = st.button("Kategoriyi Ekle", type="primary", key="add_cat_btn")
             if submitted:
