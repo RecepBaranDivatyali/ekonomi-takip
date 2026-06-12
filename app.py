@@ -828,7 +828,7 @@ def get_pending_debts_totals():
 # --- UI HELPERS ---
 
 def get_category_badge_html(emoji, name, color):
-    return f"<span class='category-badge' style='background-color: {color}15; color: {color}; padding: 4px 10px; border-radius: 8px; font-weight: 600; font-size: 0.78rem; border: 1px solid {color}30; display: inline-flex; align-items: center; gap: 4px;'><span style='font-size: 0.82rem; line-height: 1;'>{emoji}</span><span>{name}</span></span>"
+    return f"<span class='category-badge' style='background-color: {color}15; color: {color}; padding: 4px 10px; border-radius: 8px; font-weight: 600; font-size: 0.78rem; border: 1px solid {color}30; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;'><span style='font-size: 0.82rem; line-height: 1;'>{emoji}</span><span>{name}</span></span>"
 
 def render_tx_row_html(tx, sign, amt_color, extra_style=""):
     badge = get_category_badge_html(tx['emoji'], tx['category_name'], tx['color'])
@@ -836,7 +836,7 @@ def render_tx_row_html(tx, sign, amt_color, extra_style=""):
     amount_str = f"{sign} {tx['amount']:,.2f} TL"
     time_suffix = f" ({tx['time_range']})" if 'time_range' in tx else ""
     date_str = f"{tx['date']}{time_suffix}"
-    return f'<div class="tx-feed-item" style="{extra_style}"><div style="display: flex; justify-content: space-between; align-items: center;"><div style="display: flex; align-items: center; gap: 8px;">{badge}<div style="font-weight: 500; font-size: 0.85rem;">{desc}</div></div><div style="text-align: right;"><div style="color: {amt_color}; font-weight: 700; font-size: 0.92rem;">{amount_str}</div><div style="font-size: 0.7rem; color: #94A3B8; margin-top: 2px;">{date_str}</div></div></div></div>'
+    return f'<div class="tx-feed-item" style="{extra_style}"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; min-width: 0;"><div style="display: flex; align-items: center; gap: 8px; min-width: 0;">{badge}<div style="font-weight: 500; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{desc}">{desc}</div></div><div style="text-align: right; flex-shrink: 0;"><div style="color: {amt_color}; font-weight: 700; font-size: 0.92rem;">{amount_str}</div><div style="font-size: 0.7rem; color: #94A3B8; margin-top: 2px;">{date_str}</div></div></div></div>'
 
 def get_debt_badge_html(due_date_str):
     if not due_date_str:
@@ -880,6 +880,8 @@ def inject_custom_css():
     html, body, [class*="css"], .stApp {
         font-family: 'Plus Jakarta Sans', 'Outfit', 'Inter', sans-serif;
         font-size: 0.88rem !important;
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
     }
     
     /* Typography Overrides */
@@ -1072,10 +1074,9 @@ def inject_custom_css():
     }
     
     /* Target only action buttons inside transaction rows, category lists, or debt actions */
-    div[data-testid="stHorizontalBlock"]:has(.tx-feed-item) div[data-testid="stColumn"] button,
-    div[data-testid="stHorizontalBlock"]:has(.category-badge) div[data-testid="stColumn"] button,
-    div[data-testid="stHorizontalBlock"]:has(.debt-info-card) div[data-testid="stColumn"] button,
-    div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] button {
+    div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.tx-feed-item) button,
+    div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.category-badge) button,
+    div[data-testid="stHorizontalBlock"]:has(.debt-info-card) div[data-testid="stHorizontalBlock"] button {
         padding: 2px 4px !important;
         min-width: 32px !important;
         min-height: 32px !important;
@@ -1095,34 +1096,31 @@ def inject_custom_css():
         transition: all 0.2s ease-in-out !important;
     }
     
-    div[data-testid="stHorizontalBlock"]:has(.tx-feed-item) div[data-testid="stColumn"] button:hover,
-    div[data-testid="stHorizontalBlock"]:has(.category-badge) div[data-testid="stColumn"] button:hover,
-    div[data-testid="stHorizontalBlock"]:has(.debt-info-card) div[data-testid="stColumn"] button:hover,
-    div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] button:hover {
+    div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.tx-feed-item) button:hover,
+    div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.category-badge) button:hover,
+    div[data-testid="stHorizontalBlock"]:has(.debt-info-card) div[data-testid="stHorizontalBlock"] button:hover {
         background-color: #F1F5F9 !important;
         border-color: #CBD5E1 !important;
         transform: scale(1.1) !important;
     }
     
     @media (prefers-color-scheme: dark) {
-        div[data-testid="stHorizontalBlock"]:has(.tx-feed-item) div[data-testid="stColumn"] button,
-        div[data-testid="stHorizontalBlock"]:has(.category-badge) div[data-testid="stColumn"] button,
-        div[data-testid="stHorizontalBlock"]:has(.debt-info-card) div[data-testid="stColumn"] button,
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] button {
+        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.tx-feed-item) button,
+        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.category-badge) button,
+        div[data-testid="stHorizontalBlock"]:has(.debt-info-card) div[data-testid="stHorizontalBlock"] button {
             background-color: #1E293B !important;
             border-color: #334155 !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.tx-feed-item) div[data-testid="stColumn"] button:hover,
-        div[data-testid="stHorizontalBlock"]:has(.category-badge) div[data-testid="stColumn"] button:hover,
-        div[data-testid="stHorizontalBlock"]:has(.debt-info-card) div[data-testid="stColumn"] button:hover,
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] button:hover {
+        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.tx-feed-item) button:hover,
+        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.category-badge) button:hover,
+        div[data-testid="stHorizontalBlock"]:has(.debt-info-card) div[data-testid="stHorizontalBlock"] button:hover {
             background-color: #334155 !important;
             border-color: #475569 !important;
         }
     }
     
     /* Style for Emoji Grid Buttons */
-    div[data-testid="stHorizontalBlock"]:has(.emoji-marker) button {
+    div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.emoji-marker) button {
         font-size: 1.2rem !important;
         padding: 4px !important;
         width: 100% !important;
@@ -1231,85 +1229,94 @@ def inject_custom_css():
             justify-self: start !important;
         }
 
+        /* Prevent horizontal overflow on mobile viewports */
+        html, body, [data-testid="stAppViewBlockContainer"] {
+            overflow-x: hidden !important;
+            max-width: 100vw !important;
+        }
+
         /* Metric cards vertical gap fix on mobile */
         .metric-card {
             margin-bottom: 16px !important;
         }
 
         /* Emoji selector grid on mobile: force it to stay in a 6-column grid */
-        div[data-testid="stHorizontalBlock"]:has(.emoji-marker) {
+        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.emoji-marker) {
             display: grid !important;
             grid-template-columns: repeat(6, 1fr) !important;
             gap: 6px !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.emoji-marker) > div[data-testid="stColumn"] {
+        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.emoji-marker) > div[data-testid="stColumn"] {
             width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
         }
 
         /* Transaction row layout on mobile: keep item and action buttons in a single row */
-        div[data-testid="stHorizontalBlock"]:has(.tx-feed-item) {
+        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.tx-feed-item) {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
             align-items: center !important;
             gap: 6px !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.tx-feed-item) > div[data-testid="stColumn"] {
+        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.tx-feed-item) > div[data-testid="stColumn"] {
             width: auto !important;
             flex-grow: 0 !important;
             flex-shrink: 0 !important;
             margin: 0 !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.tx-feed-item) > div[data-testid="stColumn"]:first-child {
+        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.tx-feed-item) > div[data-testid="stColumn"]:first-child {
             flex-grow: 1 !important;
             flex-shrink: 1 !important;
+            min-width: 0 !important;
         }
 
         /* Category row layout on mobile */
-        div[data-testid="stHorizontalBlock"]:has(.category-badge) {
+        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.category-badge) {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
             align-items: center !important;
             gap: 6px !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.category-badge) > div[data-testid="stColumn"] {
+        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.category-badge) > div[data-testid="stColumn"] {
             width: auto !important;
             flex-grow: 0 !important;
             flex-shrink: 0 !important;
             margin: 0 !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.category-badge) > div[data-testid="stColumn"]:first-child {
+        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.category-badge) > div[data-testid="stColumn"]:first-child {
             flex-grow: 1 !important;
             flex-shrink: 1 !important;
+            min-width: 0 !important;
         }
 
         /* Debt row layout on mobile */
-        div[data-testid="stHorizontalBlock"]:has(.debt-info-card) {
+        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.debt-info-card) {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
             align-items: center !important;
             gap: 8px !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.debt-info-card) > div[data-testid="stColumn"] {
+        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.debt-info-card) > div[data-testid="stColumn"] {
             width: auto !important;
             flex-grow: 0 !important;
             flex-shrink: 0 !important;
             margin: 0 !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.debt-info-card) > div[data-testid="stColumn"]:first-child {
+        div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])):has(.debt-info-card) > div[data-testid="stColumn"]:first-child {
             flex-grow: 1 !important;
             flex-shrink: 1 !important;
+            min-width: 0 !important;
         }
 
         /* Nested columns for debt action buttons on mobile */
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] {
+        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])) {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
             align-items: center !important;
             gap: 6px !important;
         }
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
+        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:not(:has(div[data-testid="stHorizontalBlock"])) > div[data-testid="stColumn"] {
             width: auto !important;
             flex-grow: 0 !important;
             flex-shrink: 0 !important;
