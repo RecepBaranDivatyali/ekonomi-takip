@@ -910,6 +910,7 @@ def inject_custom_css():
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
+        text-align: center;
     }
     
     .metric-card:hover {
@@ -1074,9 +1075,9 @@ def inject_custom_css():
     }
     
     /* Target only action buttons inside transaction rows, category lists, or debt actions */
-    div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.tx-row-marker) div[data-testid="stColumn"] button,
-    div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) div[data-testid="stColumn"] button,
-    div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button {
+    div[data-testid="stHorizontalBlock"]:has(.tx-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] button,
+    div[data-testid="stHorizontalBlock"]:has(.cat-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] button,
+    div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button {
         padding: 2px 4px !important;
         min-width: 32px !important;
         min-height: 32px !important;
@@ -1096,24 +1097,24 @@ def inject_custom_css():
         transition: all 0.2s ease-in-out !important;
     }
     
-    div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.tx-row-marker) div[data-testid="stColumn"] button:hover,
-    div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) div[data-testid="stColumn"] button:hover,
-    div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button:hover {
+    div[data-testid="stHorizontalBlock"]:has(.tx-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] button:hover,
+    div[data-testid="stHorizontalBlock"]:has(.cat-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] button:hover,
+    div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button:hover {
         background-color: #F1F5F9 !important;
         border-color: #CBD5E1 !important;
         transform: scale(1.1) !important;
     }
     
     @media (prefers-color-scheme: dark) {
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.tx-row-marker) div[data-testid="stColumn"] button,
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) div[data-testid="stColumn"] button,
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button {
+        div[data-testid="stHorizontalBlock"]:has(.tx-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] button,
+        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] button,
+        div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button {
             background-color: #1E293B !important;
             border-color: #334155 !important;
         }
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.tx-row-marker) div[data-testid="stColumn"] button:hover,
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) div[data-testid="stColumn"] button:hover,
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button:hover {
+        div[data-testid="stHorizontalBlock"]:has(.tx-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] button:hover,
+        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) div[data-testid="stColumn"] button:hover,
+        div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] button:hover {
             background-color: #334155 !important;
             border-color: #475569 !important;
         }
@@ -1267,31 +1268,31 @@ def inject_custom_css():
         }
 
         /* Metric cards row layout on mobile: keep in a single row */
-        div[data-testid="stHorizontalBlock"]:has(.metric-marker) {
+        div[data-testid="stHorizontalBlock"]:has(.metric-marker):not(:has(div[data-testid="stHorizontalBlock"])) {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
             align-items: stretch !important;
             gap: 6px !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.metric-marker) > div[data-testid="stColumn"] {
+        div[data-testid="stHorizontalBlock"]:has(.metric-marker):not(:has(div[data-testid="stHorizontalBlock"])) > div[data-testid="stColumn"] {
             width: 33.333% !important;
             min-width: 0 !important;
             flex-grow: 1 !important;
             flex-shrink: 0 !important;
             margin: 0 !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.metric-marker) .metric-card {
+        div[data-testid="stHorizontalBlock"]:has(.metric-marker):not(:has(div[data-testid="stHorizontalBlock"])) .metric-card {
             padding: 8px 10px !important;
             min-height: 90px !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.metric-marker) .metric-value {
+        div[data-testid="stHorizontalBlock"]:has(.metric-marker):not(:has(div[data-testid="stHorizontalBlock"])) .metric-value {
             font-size: 1.05rem !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.metric-marker) .metric-title {
+        div[data-testid="stHorizontalBlock"]:has(.metric-marker):not(:has(div[data-testid="stHorizontalBlock"])) .metric-title {
             font-size: 0.62rem !important;
             letter-spacing: 0px !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.metric-marker) .metric-sub {
+        div[data-testid="stHorizontalBlock"]:has(.metric-marker):not(:has(div[data-testid="stHorizontalBlock"])) .metric-sub {
             display: block !important;
             font-size: 0.58rem !important;
             line-height: 1.1 !important;
@@ -1299,7 +1300,7 @@ def inject_custom_css():
         }
 
         /* Transaction list row layout on mobile */
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.tx-row-marker) {
+        div[data-testid="stHorizontalBlock"]:has(.tx-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
             align-items: center !important;
@@ -1307,13 +1308,13 @@ def inject_custom_css():
             max-width: 100% !important;
             width: 100% !important;
         }
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.tx-row-marker) div[data-testid="stColumn"] {
+        div[data-testid="stHorizontalBlock"]:has(.tx-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) > div[data-testid="stColumn"] {
             width: auto !important;
             flex-grow: 0 !important;
             flex-shrink: 0 !important;
             margin: 0 !important;
         }
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.tx-row-marker) div[data-testid="stColumn"]:has(.tx-row-marker) {
+        div[data-testid="stHorizontalBlock"]:has(.tx-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) > div[data-testid="stColumn"]:has(.tx-row-marker) {
             flex-grow: 1 !important;
             flex-shrink: 1 !important;
             min-width: 0 !important;
@@ -1334,7 +1335,7 @@ def inject_custom_css():
         }
 
         /* Category list row layout on mobile */
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) {
+        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
             align-items: center !important;
@@ -1342,20 +1343,20 @@ def inject_custom_css():
             max-width: 100% !important;
             width: 100% !important;
         }
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) div[data-testid="stColumn"] {
+        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) > div[data-testid="stColumn"] {
             width: auto !important;
             flex-grow: 0 !important;
             flex-shrink: 0 !important;
             margin: 0 !important;
         }
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) div[data-testid="stColumn"]:has(.cat-row-marker) {
+        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker):not(:has(div[data-testid="stHorizontalBlock"])) > div[data-testid="stColumn"]:has(.cat-row-marker) {
             flex-grow: 1 !important;
             flex-shrink: 1 !important;
             min-width: 0 !important;
         }
 
         /* Debt tracking list row layout on mobile: Outer columns */
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) {
+        div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
             align-items: center !important;
@@ -1363,26 +1364,26 @@ def inject_custom_css():
             max-width: 100% !important;
             width: 100% !important;
         }
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) > div[data-testid="stColumn"] {
+        div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) > div[data-testid="stColumn"] {
             width: auto !important;
             flex-grow: 0 !important;
             flex-shrink: 0 !important;
             margin: 0 !important;
         }
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) > div[data-testid="stColumn"]:has(.debt-row-marker) {
+        div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) > div[data-testid="stColumn"]:has(.debt-row-marker) {
             flex-grow: 1 !important;
             flex-shrink: 1 !important;
             min-width: 0 !important;
         }
 
         /* Debt tracking list row layout on mobile: Inner columns */
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] {
+        div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
             align-items: center !important;
             gap: 6px !important;
         }
-        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
+        div[data-testid="stTab"] div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
             width: auto !important;
             flex-grow: 0 !important;
             flex-shrink: 0 !important;
