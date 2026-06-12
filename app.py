@@ -1717,26 +1717,45 @@ def inject_custom_css():
             if (input.dataset.amountFormatted) return;
             input.dataset.amountFormatted = "true";
             
+            function syncToReact() {
+                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                if (nativeInputValueSetter) {
+                    nativeInputValueSetter.call(input, input.value);
+                }
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            
             input.addEventListener('input', function(e) {
                 if (e.isTrusted === false) return;
+                e.stopPropagation();
                 
                 let cursorPosition = input.selectionStart;
                 let originalLength = input.value.length;
                 
                 let formatted = formatTurkishCurrency(input.value);
                 
-                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                if (nativeInputValueSetter) {
-                    nativeInputValueSetter.call(input, formatted);
-                } else {
-                    input.value = formatted;
-                }
-                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.value = formatted;
                 
                 let newLength = formatted.length;
                 let diff = newLength - originalLength;
                 
                 input.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
+            });
+            
+            input.addEventListener('change', function(e) {
+                if (e.isTrusted === false) return;
+                e.stopPropagation();
+            });
+            
+            input.addEventListener('blur', function() {
+                syncToReact();
+            });
+            
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    syncToReact();
+                }
             });
         }
 
@@ -2253,67 +2272,66 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
             except Exception:
                 parsed_date = today_date
                 
-            col_type, col_date, col_time, col_amount = st.columns([3, 3, 4, 3])
+            # Keep type selection outside the form to allow dynamic category list filtering on click
+            radio_options = ["Gider", "Gelir"]
+            default_radio_idx = radio_options.index(edit_tx['type']) if edit_tx['type'] in radio_options else 0
+            tx_type = st.radio("İşlem Türü", radio_options, index=default_radio_idx, horizontal=True, key="edit_tx_type")
             
-            with col_type:
-                radio_options = ["Gider", "Gelir"]
-                default_radio_idx = radio_options.index(edit_tx['type']) if edit_tx['type'] in radio_options else 0
-                tx_type = st.radio("İşlem Türü", radio_options, index=default_radio_idx, horizontal=True, key="edit_tx_type")
-            
-            with col_date:
-                tx_date = st.date_input("Tarih", parsed_date, max_value=today_date, key="edit_tx_date")
-                
-            with col_time:
-                time_options = {
-                    '05:00 - 18:15': '05:00 - 18:15 (Gün İçi - Bugün)',
-                    '18:15 - 23:59': '18:15 - 23:59 (Akşam - Yarın)',
-                    '00:00 - 05:00': '00:00 - 05:00 (Gece - Bugün)'
-                }
-                opt_keys = list(time_options.keys())
-                default_time_idx = opt_keys.index(edit_tx['time_range']) if edit_tx['time_range'] in opt_keys else 0
-                tx_time = st.selectbox(
-                    "Saat Aralığı",
-                    options=opt_keys,
-                    format_func=lambda x: time_options[x],
-                    index=default_time_idx,
-                    key="edit_tx_time"
-                )
-                
-            with col_amount:
-                tx_amount_str = st.text_input("Miktar (TL)", value=format_turkish_amount(edit_tx['amount']), key="edit_tx_amount")
-                
             # Filter categories based on transaction type
             filtered_cats = [c for c in categories if c['type'] == tx_type]
             
-            col_cat, col_desc = st.columns([1, 2])
-            with col_cat:
-                if filtered_cats:
-                    cat_options = {c['id']: f"{c['emoji']} {c['name']}" for c in filtered_cats}
-                    cat_ids = list(cat_options.keys())
-                    try:
-                        default_cat_idx = cat_ids.index(edit_tx['category_id'])
-                    except ValueError:
-                        default_cat_idx = 0
-                        
-                    selected_cat_id = st.selectbox(
-                        "Kategori", 
-                        options=cat_ids, 
-                        format_func=lambda x: cat_options[x],
-                        index=default_cat_idx,
-                        key="edit_tx_category"
-                    )
-                else:
-                    st.error(f"Seçilen türde ({tx_type}) kategori bulunamadı.")
-                    selected_cat_id = None
-                    
-            with col_desc:
-                tx_desc = st.text_input("Açıklama / Detay", value=edit_tx['description'] or "", key="edit_tx_desc")
+            with st.form("edit_transaction_form", clear_on_submit=False):
+                col_date, col_time, col_amount = st.columns([3, 4, 3])
                 
-            col_btn1, col_btn2, col_spacer = st.columns([1, 1, 4])
-            with col_btn1:
-                submitted = st.button("Değişiklikleri Kaydet", type="primary", key="save_edit_btn")
-            with col_btn2:
-                canceled = st.button("İptal Et / Düzenlemeden Çık", key="cancel_edit_btn")
+                with col_date:
+                    tx_date = st.date_input("Tarih", parsed_date, max_value=today_date, key="edit_tx_date")
+                    
+                with col_time:
+                    time_options = {
+                        '05:00 - 18:15': '05:00 - 18:15 (Gün İçi - Bugün)',
+                        '18:15 - 23:59': '18:15 - 23:59 (Akşam - Yarın)',
+                        '00:00 - 05:00': '00:00 - 05:00 (Gece - Bugün)'
+                    }
+                    opt_keys = list(time_options.keys())
+                    default_time_idx = opt_keys.index(edit_tx['time_range']) if edit_tx['time_range'] in opt_keys else 0
+                    tx_time = st.selectbox(
+                        "Saat Aralığı",
+                        options=opt_keys,
+                        format_func=lambda x: time_options[x],
+                        index=default_time_idx,
+                        key="edit_tx_time"
+                    )
+                    
+                with col_amount:
+                    tx_amount_str = st.text_input("Miktar (TL)", value=format_turkish_amount(edit_tx['amount']), key="edit_tx_amount")
+                    
+                col_cat, col_desc = st.columns([1, 2])
+                with col_cat:
+                    if filtered_cats:
+                        cat_options = {c['id']: f"{c['emoji']} {c['name']}" for c in filtered_cats}
+                        cat_ids = list(cat_options.keys())
+                        try:
+                            default_cat_idx = cat_ids.index(edit_tx['category_id'])
+                        except ValueError:
+                            default_cat_idx = 0
+                            
+                        selected_cat_id = st.selectbox(
+                            "Kategori", 
+                            options=cat_ids, 
+                            format_func=lambda x: cat_options[x],
+                            index=default_cat_idx,
+                            key="edit_tx_category"
+                        )
+                    else:
+                        st.error(f"Seçilen türde ({tx_type}) kategori bulunamadı.")
+                        selected_cat_id = None
+                        
+                with col_desc:
+                    tx_desc = st.text_input("Açıklama / Detay", value=edit_tx['description'] or "", key="edit_tx_desc")
+                    
+                submitted = st.form_submit_button("Değişiklikleri Kaydet", type="primary")
+                
+            canceled = st.button("İptal Et / Düzenlemeden Çık", key="cancel_edit_btn")
                 
             if submitted:
                 tx_amount = parse_turkish_amount(tx_amount_str)
@@ -2335,55 +2353,56 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
         else:
             st.markdown("### ➕ Yeni İşlem Kaydet")
             
-            col_type, col_date, col_time, col_amount = st.columns([3, 3, 4, 3])
+            # Keep type selection outside the form to allow dynamic category list filtering on click
+            tx_type = st.radio("İşlem Türü", ["Gider", "Gelir"], index=None, horizontal=True)
             
-            with col_type:
-                tx_type = st.radio("İşlem Türü", ["Gider", "Gelir"], index=None, horizontal=True)
-            
-            with col_date:
-                tx_date = st.date_input("Tarih", today_date, max_value=today_date)
-                
-            with col_time:
-                time_options = {
-                    '05:00 - 18:15': '05:00 - 18:15 (Gün İçi - Bugün)',
-                    '18:15 - 23:59': '18:15 - 23:59 (Akşam - Yarın)',
-                    '00:00 - 05:00': '00:00 - 05:00 (Gece - Bugün)'
-                }
-                tx_time = st.selectbox(
-                    "Saat Aralığı",
-                    options=list(time_options.keys()),
-                    format_func=lambda x: time_options[x],
-                    index=0,
-                    help="Gecelik faizin işletileceği matrahın hangi günden itibaren hesaplanacağını belirlemek için gereklidir."
-                )
-                
-            with col_amount:
-                tx_amount_str = st.text_input("Miktar (TL)", value="", key="new_tx_amount")
-                
             # Filter categories based on transaction type
             filtered_cats = [c for c in categories if c['type'] == tx_type] if tx_type else []
             
-            col_cat, col_desc = st.columns([1, 2])
-            with col_cat:
-                if tx_type is None:
-                    st.info("Kategori listelemek için lütfen işlem türü seçin.")
-                    selected_cat_id = None
-                elif filtered_cats:
-                    cat_options = {c['id']: f"{c['emoji']} {c['name']}" for c in filtered_cats}
-                    selected_cat_id = st.selectbox(
-                        "Kategori", 
-                        options=list(cat_options.keys()), 
-                        format_func=lambda x: cat_options[x]
-                    )
-                else:
-                    st.error(f"Seçilen türde ({tx_type}) kategori bulunamadı.")
-                    selected_cat_id = None
-                    
-            with col_desc:
-                tx_desc = st.text_input("Açıklama / Detay")
+            with st.form("new_transaction_form", clear_on_submit=False):
+                col_date, col_time, col_amount = st.columns([3, 4, 3])
                 
-            submitted = st.button("İşlemi Kaydet", type="primary")
-            
+                with col_date:
+                    tx_date = st.date_input("Tarih", today_date, max_value=today_date)
+                    
+                with col_time:
+                    time_options = {
+                        '05:00 - 18:15': '05:00 - 18:15 (Gün İçi - Bugün)',
+                        '18:15 - 23:59': '18:15 - 23:59 (Akşam - Yarın)',
+                        '00:00 - 05:00': '00:00 - 05:00 (Gece - Bugün)'
+                    }
+                    tx_time = st.selectbox(
+                        "Saat Aralığı",
+                        options=list(time_options.keys()),
+                        format_func=lambda x: time_options[x],
+                        index=0,
+                        help="Gecelik faizin işletileceği matrahın hangi günden itibaren hesaplanacağını belirlemek için gereklidir."
+                    )
+                    
+                with col_amount:
+                    tx_amount_str = st.text_input("Miktar (TL)", value="", key="new_tx_amount")
+                    
+                col_cat, col_desc = st.columns([1, 2])
+                with col_cat:
+                    if tx_type is None:
+                        st.info("Kategori listelemek için lütfen işlem türü seçin.")
+                        selected_cat_id = None
+                    elif filtered_cats:
+                        cat_options = {c['id']: f"{c['emoji']} {c['name']}" for c in filtered_cats}
+                        selected_cat_id = st.selectbox(
+                            "Kategori", 
+                            options=list(cat_options.keys()), 
+                            format_func=lambda x: cat_options[x]
+                        )
+                    else:
+                        st.error(f"Seçilen türde ({tx_type}) kategori bulunamadı.")
+                        selected_cat_id = None
+                        
+                with col_desc:
+                    tx_desc = st.text_input("Açıklama / Detay")
+                    
+                submitted = st.form_submit_button("İşlemi Kaydet", type="primary")
+                
             if submitted:
                 tx_amount = parse_turkish_amount(tx_amount_str)
                 if tx_amount is None or tx_amount <= 0:
@@ -2831,36 +2850,17 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
     with col_add:
         if edit_debt:
             st.markdown(f"### ✏️ Borç Kaydını Düzenle (ID: #{edit_debt['id']})")
+            
+            # Keep type selection outside form
             debt_type = st.radio("Borç Türü", ["Alınacak", "Verilecek"], 
                                  index=0 if edit_debt['type'] == 'Alınacak' else 1, 
                                  horizontal=True, key="edit_debt_type")
-            debt_name = st.text_input("Kişi / Kurum Adı", value=edit_debt['name'], key="edit_debt_name")
-            debt_amount_str = st.text_input("Miktar (TL)", value=format_turkish_amount(edit_debt['amount']), key="edit_debt_amount")
             
-            # Filter categories based on debt type:
-            # Alınacak -> Gelir categories
-            # Verilecek -> Gider categories
+            # Filter categories based on debt type
             cat_type_needed = "Gelir" if debt_type == "Alınacak" else "Gider"
             filtered_cats = [c for c in categories if c['type'] == cat_type_needed]
             
-            if filtered_cats:
-                cat_options = {c['id']: f"{c['emoji']} {c['name']}" for c in filtered_cats}
-                cat_ids = list(cat_options.keys())
-                try:
-                    default_cat_idx = cat_ids.index(edit_debt['category_id']) if edit_debt['category_id'] in cat_ids else 0
-                except ValueError:
-                    default_cat_idx = 0
-                selected_cat_id = st.selectbox(
-                    "Kategori", 
-                    options=cat_ids, 
-                    format_func=lambda x: cat_options[x],
-                    index=default_cat_idx,
-                    key="edit_debt_category"
-                )
-            else:
-                st.error(f"Seçilen tür için ({cat_type_needed}) uygun bir kategori bulunamadı. Lütfen önce Kategori Yönetimi sayfasından bir kategori oluşturun.")
-                selected_cat_id = None
-                
+            # Keep checkbox and date outside form so it dynamically collapses/expands
             has_due_date = st.checkbox("Vade Tarihi Var", value=edit_debt['due_date'] is not None, key="edit_debt_has_due")
             if has_due_date:
                 try:
@@ -2870,16 +2870,36 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                 debt_due_date = st.date_input("Vade Tarihi", parsed_due, key="edit_debt_due")
             else:
                 debt_due_date = None
-            
-            status_options = ["Bekliyor", "Ödendi"]
-            default_status_idx = status_options.index(edit_debt['status']) if edit_debt['status'] in status_options else 0
-            debt_status = st.selectbox("Durum", status_options, index=default_status_idx, key="edit_debt_status")
-            
-            col_btn1, col_btn2 = st.columns([1, 1])
-            with col_btn1:
-                submitted = st.button("Değişiklikleri Kaydet", type="primary", key="save_edit_debt_btn")
-            with col_btn2:
-                canceled = st.button("İptal Et", key="cancel_edit_debt_btn")
+                
+            with st.form("edit_debt_form", clear_on_submit=False):
+                debt_name = st.text_input("Kişi / Kurum Adı", value=edit_debt['name'], key="edit_debt_name")
+                debt_amount_str = st.text_input("Miktar (TL)", value=format_turkish_amount(edit_debt['amount']), key="edit_debt_amount")
+                
+                if filtered_cats:
+                    cat_options = {c['id']: f"{c['emoji']} {c['name']}" for c in filtered_cats}
+                    cat_ids = list(cat_options.keys())
+                    try:
+                        default_cat_idx = cat_ids.index(edit_debt['category_id']) if edit_debt['category_id'] in cat_ids else 0
+                    except ValueError:
+                        default_cat_idx = 0
+                    selected_cat_id = st.selectbox(
+                        "Kategori", 
+                        options=cat_ids, 
+                        format_func=lambda x: cat_options[x],
+                        index=default_cat_idx,
+                        key="edit_debt_category"
+                    )
+                else:
+                    st.error(f"Seçilen tür için ({cat_type_needed}) uygun bir kategori bulunamadı. Lütfen önce Kategori Yönetimi sayfasından bir kategori oluşturun.")
+                    selected_cat_id = None
+                    
+                status_options = ["Bekliyor", "Ödendi"]
+                default_status_idx = status_options.index(edit_debt['status']) if edit_debt['status'] in status_options else 0
+                debt_status = st.selectbox("Durum", status_options, index=default_status_idx, key="edit_debt_status")
+                
+                submitted = st.form_submit_button("Değişiklikleri Kaydet", type="primary")
+                
+            canceled = st.button("İptal Et", key="cancel_edit_debt_btn")
                 
             if submitted:
                 debt_amount = parse_turkish_amount(debt_amount_str)
@@ -2901,8 +2921,6 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
         else:
             st.markdown("### ➕ Yeni Borç Kaydı")
             debt_type = st.radio("Borç Türü", ["Alınacak", "Verilecek"], horizontal=True, help="Alınacak: Bize gelecek para | Verilecek: Bizim ödeyeceğimiz para", key="new_debt_type")
-            debt_name = st.text_input("Kişi / Kurum Adı", placeholder="Örn: Ahmet Yılmaz, Spor Genel Md.", key="new_debt_name")
-            debt_amount_str = st.text_input("Miktar (TL)", value="", key="new_debt_amount")
             
             # Filter categories based on debt type:
             # Alınacak -> Gelir categories
@@ -2910,25 +2928,30 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
             cat_type_needed = "Gelir" if debt_type == "Alınacak" else "Gider"
             filtered_cats = [c for c in categories if c['type'] == cat_type_needed]
             
-            if filtered_cats:
-                cat_options = {c['id']: f"{c['emoji']} {c['name']}" for c in filtered_cats}
-                selected_cat_id = st.selectbox(
-                    "Kategori", 
-                    options=list(cat_options.keys()), 
-                    format_func=lambda x: cat_options[x],
-                    key="new_debt_category"
-                )
-            else:
-                st.error(f"Seçilen tür için ({cat_type_needed}) uygun bir kategori bulunamadı. Lütfen önce Kategori Yönetimi sayfasından bir kategori oluşturun.")
-                selected_cat_id = None
-                
             has_due_date = st.checkbox("Vade Tarihi Var", key="new_debt_has_due")
             if has_due_date:
                 debt_due_date = st.date_input("Vade Tarihi", today_date, key="new_debt_due")
             else:
                 debt_due_date = None
                 
-            submitted = st.button("Borç Ekle", type="primary", key="add_debt_btn")
+            with st.form("new_debt_form", clear_on_submit=False):
+                debt_name = st.text_input("Kişi / Kurum Adı", placeholder="Örn: Ahmet Yılmaz, Spor Genel Md.", key="new_debt_name")
+                debt_amount_str = st.text_input("Miktar (TL)", value="", key="new_debt_amount")
+                
+                if filtered_cats:
+                    cat_options = {c['id']: f"{c['emoji']} {c['name']}" for c in filtered_cats}
+                    selected_cat_id = st.selectbox(
+                        "Kategori", 
+                        options=list(cat_options.keys()), 
+                        format_func=lambda x: cat_options[x],
+                        key="new_debt_category"
+                    )
+                else:
+                    st.error(f"Seçilen tür için ({cat_type_needed}) uygun bir kategori bulunamadı. Lütfen önce Kategori Yönetimi sayfasından bir kategori oluşturun.")
+                    selected_cat_id = None
+                    
+                submitted = st.form_submit_button("Borç Ekle", type="primary")
+                
             if submitted:
                 debt_amount = parse_turkish_amount(debt_amount_str)
                 if debt_amount is None or debt_amount <= 0:
