@@ -1073,12 +1073,7 @@ def inject_custom_css():
 
     # Dynamic JS injection for category coloring inside selectboxes
     try:
-        conn = sqlite3.connect('ekonomi.db')
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        cursor.execute("SELECT name, emoji, color FROM categories")
-        rows = cursor.fetchall()
-        conn.close()
+        rows = get_categories()
         cat_colors = {f"{row['emoji']} {row['name']}": row['color'] for row in rows}
     except Exception:
         cat_colors = {}
@@ -1179,12 +1174,17 @@ st.sidebar.markdown(
 )
 
 # Read active rate for today from db
-conn = get_connection()
-cursor = conn.cursor()
-cursor.execute("SELECT rate FROM interest_rate_logs WHERE date <= ? ORDER BY date DESC LIMIT 1", (today_str,))
-row = cursor.fetchone()
-current_active_rate = row['rate'] if row else 0.41
-conn.close()
+if USE_SUPABASE:
+    rate_logs = get_rate_logs()
+    row = next((r for r in rate_logs if r['date'] <= today_str), None)
+    current_active_rate = row['rate'] if row else 0.41
+else:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT rate FROM interest_rate_logs WHERE date <= ? ORDER BY date DESC LIMIT 1", (today_str,))
+    row = cursor.fetchone()
+    current_active_rate = row['rate'] if row else 0.41
+    conn.close()
 
 # Navigation
 st.sidebar.markdown("---")
@@ -1353,18 +1353,36 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
         edit_tx_id = st.session_state.get('edit_tx_id')
         edit_tx = None
         if edit_tx_id:
-            conn = get_connection()
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT t.id, t.date, t.category_id, t.amount, t.description, t.time_range, c.type
-                FROM transactions t
-                JOIN categories c ON t.category_id = c.id
-                WHERE t.id = ?
-            """, (edit_tx_id,))
-            row = cursor.fetchone()
-            conn.close()
-            if row:
-                edit_tx = dict(row)
+            if USE_SUPABASE:
+                client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
+                data = client._get("transactions", params={
+                    "select": "id,date,category_id,amount,description,time_range,categories(type)",
+                    "id": f"eq.{edit_tx_id}"
+                })
+                if data:
+                    row = data[0]
+                    edit_tx = {
+                        "id": row["id"],
+                        "date": row["date"],
+                        "category_id": row["category_id"],
+                        "amount": row["amount"],
+                        "description": row["description"],
+                        "time_range": row["time_range"],
+                        "type": row["categories"]["type"] if row.get("categories") else None
+                    }
+            else:
+                conn = get_connection()
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT t.id, t.date, t.category_id, t.amount, t.description, t.time_range, c.type
+                    FROM transactions t
+                    JOIN categories c ON t.category_id = c.id
+                    WHERE t.id = ?
+                """, (edit_tx_id,))
+                row = cursor.fetchone()
+                conn.close()
+                if row:
+                    edit_tx = dict(row)
                 
         if edit_tx:
             st.markdown(f"### ✏️ İşlemi Düzenle (ID: #{edit_tx['id']})")
@@ -1566,13 +1584,19 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
     edit_cat_id = st.session_state.get('edit_cat_id')
     edit_cat = None
     if edit_cat_id:
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, name, emoji, color, type FROM categories WHERE id = ?", (edit_cat_id,))
-        row = cursor.fetchone()
-        conn.close()
-        if row:
-            edit_cat = dict(row)
+        if USE_SUPABASE:
+            client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
+            data = client._get("categories", params={"id": f"eq.{edit_cat_id}"})
+            if data:
+                edit_cat = data[0]
+        else:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, name, emoji, color, type FROM categories WHERE id = ?", (edit_cat_id,))
+            row = cursor.fetchone()
+            conn.close()
+            if row:
+                edit_cat = dict(row)
             
     with col_add:
         if edit_cat:
@@ -1772,13 +1796,19 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
     edit_debt_id = st.session_state.get('edit_debt_id')
     edit_debt = None
     if edit_debt_id:
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, type, amount, name, due_date, status, category_id FROM debts WHERE id = ?", (edit_debt_id,))
-        row = cursor.fetchone()
-        conn.close()
-        if row:
-            edit_debt = dict(row)
+        if USE_SUPABASE:
+            client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
+            data = client._get("debts", params={"id": f"eq.{edit_debt_id}"})
+            if data:
+                edit_debt = data[0]
+        else:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, type, amount, name, due_date, status, category_id FROM debts WHERE id = ?", (edit_debt_id,))
+            row = cursor.fetchone()
+            conn.close()
+            if row:
+                edit_debt = dict(row)
             
     with col_add:
         if edit_debt:
