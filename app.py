@@ -1209,6 +1209,23 @@ def inject_custom_css():
         height: auto !important;
         min-height: 36px !important;
     }
+    /* Force action buttons inside expander to be side-by-side on all screens */
+    div[data-testid="stExpander"] div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+    div[data-testid="stExpander"] div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        flex: 1 1 0% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
     @media (prefers-color-scheme: dark) {
         div[data-testid="stExpander"] {
             border-color: #334155 !important;
