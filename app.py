@@ -1165,7 +1165,7 @@ def inject_custom_css():
     div[data-testid="stExpander"] {
         border: 1px solid #E2E8F0 !important;
         border-radius: 12px !important;
-        margin-bottom: 14px !important;
+        margin-bottom: -4px !important;
         overflow: hidden !important;
         transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
         background: transparent !important;
