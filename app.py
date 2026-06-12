@@ -1226,6 +1226,14 @@ def inject_custom_css():
         padding: 0 !important;
         margin: 0 !important;
     }
+    /* Hide toggle icon and disable click on expanders inside a container marked with dashboard-tx-list-marker */
+    div[data-testid="element-container"]:has(.dashboard-tx-list-marker) ~ div[data-testid="element-container"] div[data-testid="stExpander"] > details > summary {
+        pointer-events: none !important;
+        cursor: default !important;
+    }
+    div[data-testid="element-container"]:has(.dashboard-tx-list-marker) ~ div[data-testid="element-container"] div[data-testid="stExpanderToggleIcon"] {
+        display: none !important;
+    }
     @media (prefers-color-scheme: dark) {
         div[data-testid="stExpander"] {
             border-color: #334155 !important;
@@ -1869,10 +1877,89 @@ if menu_selection == "📊 Dashboard":
         end_idx = start_idx + page_size
         
         # Display transactions for current page
+        st.markdown('<span class="dashboard-tx-list-marker"></span>', unsafe_allow_html=True)
         for tx in recent_txs[start_idx:end_idx]:
             sign = "+" if tx['type'] == 'Gelir' else "-"
+            raw_desc = tx['description'] if tx['description'] else tx['category_name']
+            clean_desc = raw_desc.replace("~", "")
+            
+            # Determine font size dynamically
+            desc_len = len(clean_desc)
+            if desc_len <= 12:
+                desc_font_size = "0.88rem"
+            elif desc_len <= 18:
+                desc_font_size = "0.80rem"
+            elif desc_len <= 26:
+                desc_font_size = "0.74rem"
+            elif desc_len <= 35:
+                desc_font_size = "0.68rem"
+            else:
+                desc_font_size = "0.60rem"
+                
             amt_color = "#10B981" if tx['type'] == 'Gelir' else "#EF4444"
-            st.markdown(render_tx_row_html(tx, sign, amt_color), unsafe_allow_html=True)
+            amt_formatted = f"{sign} {tx['amount']:,.2f} TL"
+            
+            # Dynamic style block to absolute-position the amount (strong) and date (code) inside expander header
+            st.markdown(f"""
+            <style>
+            div[data-testid="stExpander"]:has(#dash-tx-id-{tx['id']}) > details > summary {{
+                padding-right: 125px !important;
+                position: relative !important;
+            }}
+            div[data-testid="stExpander"]:has(#dash-tx-id-{tx['id']}) > details > summary em {{
+                background-color: {tx['color']}15 !important;
+                color: {tx['color']} !important;
+                border: 1px solid {tx['color']}30 !important;
+                font-style: normal !important;
+                padding: 2px 8px !important;
+                border-radius: 8px !important;
+                font-size: 0.72rem !important;
+                font-weight: 600 !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 4px !important;
+                white-space: nowrap !important;
+                margin-right: 6px !important;
+            }}
+            div[data-testid="stExpander"]:has(#dash-tx-id-{tx['id']}) > details > summary del {{
+                text-decoration: none !important;
+                white-space: nowrap !important;
+                font-size: {desc_font_size} !important;
+                font-weight: 600 !important;
+                color: inherit !important;
+            }}
+            div[data-testid="stExpander"]:has(#dash-tx-id-{tx['id']}) > details > summary strong {{
+                color: {amt_color} !important;
+                position: absolute !important;
+                right: 14px !important;
+                top: 8px !important;
+                font-size: 0.90rem !important;
+                font-weight: 700 !important;
+            }}
+            div[data-testid="stExpander"]:has(#dash-tx-id-{tx['id']}) > details > summary code {{
+                position: absolute !important;
+                right: 14px !important;
+                bottom: 8px !important;
+                background: transparent !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                color: #94A3B8 !important;
+                font-size: 0.7rem !important;
+                font-weight: 400 !important;
+                font-family: inherit !important;
+            }}
+            </style>
+            """, unsafe_allow_html=True)
+            
+            if tx['category_name']:
+                cat_prefix = f"_{tx['emoji']} {tx['category_name']}_ · "
+            else:
+                cat_prefix = ""
+                
+            exp_title = f"{cat_prefix}~~{clean_desc}~~ **{amt_formatted}** `{tx['date']}`"
+            with st.expander(exp_title, expanded=False):
+                st.markdown(f'<div id="dash-tx-id-{tx["id"]}"></div>', unsafe_allow_html=True)
             
         # Pagination controls
         if total_pages > 1:
