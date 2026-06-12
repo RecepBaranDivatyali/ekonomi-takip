@@ -2152,7 +2152,7 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
                 st.markdown(f"""
                 <style>
                 div[data-testid="stExpander"]:has(#tx-id-{tx['id']}) > details > summary {{
-                    padding-right: 150px !important;
+                    padding-right: 125px !important;
                     position: relative !important;
                 }}
                 div[data-testid="stExpander"]:has(#tx-id-{tx['id']}) > details > summary em {{
@@ -2173,14 +2173,14 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
                 div[data-testid="stExpander"]:has(#tx-id-{tx['id']}) > details > summary strong {{
                     color: {amt_color} !important;
                     position: absolute !important;
-                    right: 40px !important;
+                    right: 14px !important;
                     top: 8px !important;
                     font-size: 0.90rem !important;
                     font-weight: 700 !important;
                 }}
                 div[data-testid="stExpander"]:has(#tx-id-{tx['id']}) > details > summary code {{
                     position: absolute !important;
-                    right: 40px !important;
+                    right: 14px !important;
                     bottom: 8px !important;
                     background: transparent !important;
                     border: none !important;
