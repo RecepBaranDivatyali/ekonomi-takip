@@ -828,7 +828,7 @@ def get_pending_debts_totals():
 # --- UI HELPERS ---
 
 def get_category_badge_html(emoji, name, color):
-    return f"<span style='background-color: {color}15; color: {color}; padding: 4px 10px; border-radius: 8px; font-weight: 600; font-size: 0.78rem; border: 1px solid {color}30; display: inline-flex; align-items: center; gap: 4px;'><span style='font-size: 0.82rem; line-height: 1;'>{emoji}</span><span>{name}</span></span>"
+    return f"<span class='category-badge' style='background-color: {color}15; color: {color}; padding: 4px 10px; border-radius: 8px; font-weight: 600; font-size: 0.78rem; border: 1px solid {color}30; display: inline-flex; align-items: center; gap: 4px;'><span style='font-size: 0.82rem; line-height: 1;'>{emoji}</span><span>{name}</span></span>"
 
 def render_tx_row_html(tx, sign, amt_color, extra_style=""):
     badge = get_category_badge_html(tx['emoji'], tx['category_name'], tx['color'])
@@ -1071,8 +1071,11 @@ def inject_custom_css():
         font-weight: 600 !important;
     }
     
-    /* Target small action buttons to be compact and styled */
-    div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] button {
+    /* Target only action buttons inside transaction rows, category lists, or debt actions */
+    div[data-testid="stHorizontalBlock"]:has(.tx-feed-item) div[data-testid="stColumn"] button,
+    div[data-testid="stHorizontalBlock"]:has(.category-badge) div[data-testid="stColumn"] button,
+    div[data-testid="stHorizontalBlock"]:has(.debt-info-card) div[data-testid="stColumn"] button,
+    div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] button {
         padding: 2px 4px !important;
         min-width: 32px !important;
         min-height: 32px !important;
@@ -1092,18 +1095,27 @@ def inject_custom_css():
         transition: all 0.2s ease-in-out !important;
     }
     
-    div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] button:hover {
+    div[data-testid="stHorizontalBlock"]:has(.tx-feed-item) div[data-testid="stColumn"] button:hover,
+    div[data-testid="stHorizontalBlock"]:has(.category-badge) div[data-testid="stColumn"] button:hover,
+    div[data-testid="stHorizontalBlock"]:has(.debt-info-card) div[data-testid="stColumn"] button:hover,
+    div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] button:hover {
         background-color: #F1F5F9 !important;
         border-color: #CBD5E1 !important;
         transform: scale(1.1) !important;
     }
     
     @media (prefers-color-scheme: dark) {
-        div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] button {
+        div[data-testid="stHorizontalBlock"]:has(.tx-feed-item) div[data-testid="stColumn"] button,
+        div[data-testid="stHorizontalBlock"]:has(.category-badge) div[data-testid="stColumn"] button,
+        div[data-testid="stHorizontalBlock"]:has(.debt-info-card) div[data-testid="stColumn"] button,
+        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] button {
             background-color: #1E293B !important;
             border-color: #334155 !important;
         }
-        div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] button:hover {
+        div[data-testid="stHorizontalBlock"]:has(.tx-feed-item) div[data-testid="stColumn"] button:hover,
+        div[data-testid="stHorizontalBlock"]:has(.category-badge) div[data-testid="stColumn"] button:hover,
+        div[data-testid="stHorizontalBlock"]:has(.debt-info-card) div[data-testid="stColumn"] button:hover,
+        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] button:hover {
             background-color: #334155 !important;
             border-color: #475569 !important;
         }
@@ -1252,6 +1264,56 @@ def inject_custom_css():
         div[data-testid="stHorizontalBlock"]:has(.tx-feed-item) > div[data-testid="stColumn"]:first-child {
             flex-grow: 1 !important;
             flex-shrink: 1 !important;
+        }
+
+        /* Category row layout on mobile */
+        div[data-testid="stHorizontalBlock"]:has(.category-badge) {
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
+            gap: 6px !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.category-badge) > div[data-testid="stColumn"] {
+            width: auto !important;
+            flex-grow: 0 !important;
+            flex-shrink: 0 !important;
+            margin: 0 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.category-badge) > div[data-testid="stColumn"]:first-child {
+            flex-grow: 1 !important;
+            flex-shrink: 1 !important;
+        }
+
+        /* Debt row layout on mobile */
+        div[data-testid="stHorizontalBlock"]:has(.debt-info-card) {
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
+            gap: 8px !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.debt-info-card) > div[data-testid="stColumn"] {
+            width: auto !important;
+            flex-grow: 0 !important;
+            flex-shrink: 0 !important;
+            margin: 0 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.debt-info-card) > div[data-testid="stColumn"]:first-child {
+            flex-grow: 1 !important;
+            flex-shrink: 1 !important;
+        }
+
+        /* Nested columns for debt action buttons on mobile */
+        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] {
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
+            gap: 6px !important;
+        }
+        div[data-testid="stColumn"] div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
+            width: auto !important;
+            flex-grow: 0 !important;
+            flex-shrink: 0 !important;
+            margin: 0 !important;
         }
     }
     </style>
@@ -2167,7 +2229,7 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                                 cat_badge = ""
                             
                             st.markdown(
-                                f"<div style='padding: 12px; border: 1px solid #E2E8F0; border-radius: 12px; margin-bottom: 10px;'>"
+                                f"<div class='debt-info-card' style='padding: 12px; border: 1px solid #E2E8F0; border-radius: 12px; margin-bottom: 10px;'>"
                                 f"<div style='display: flex; justify-content: space-between; align-items: center;'>"
                                 f"<div><strong>{d['name']}</strong>{badge_html}</div>"
                                 f"<span style='color: {color}; font-weight: 700;'>{d['amount']:,.2f} TL</span>"
@@ -2217,7 +2279,7 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                                 cat_badge = ""
                             
                             st.markdown(
-                                f"<div style='padding: 12px; border: 1px solid #E2E8F0; border-radius: 12px; margin-bottom: 10px; opacity: 0.75; background: #F8FAFC;'>"
+                                f"<div class='debt-info-card' style='padding: 12px; border: 1px solid #E2E8F0; border-radius: 12px; margin-bottom: 10px; opacity: 0.75; background: #F8FAFC;'>"
                                 f"<div style='display: flex; justify-content: space-between; align-items: center;'>"
                                 f"<del><strong>{d['name']}</strong></del>"
                                 f"<span style='color: {color}; font-weight: 700; text-decoration: line-through;'>{d['amount']:,.2f} TL</span>"
