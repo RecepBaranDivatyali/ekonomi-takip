@@ -1068,6 +1068,54 @@ def inject_custom_css():
             border-color: #475569 !important;
         }
     }
+    
+    /* Mobile-specific adjustments for native-app feel */
+    @media (max-width: 768px) {
+        /* Reduce side padding on mobile to maximize content width */
+        div[data-testid="stAppViewBlockContainer"] {
+            padding: 0.75rem 0.5rem !important;
+        }
+        
+        /* Smaller font sizes on mobile */
+        h1 {
+            font-size: 1.45rem !important;
+        }
+        h2 {
+            font-size: 1.2rem !important;
+        }
+        h3 {
+            font-size: 1.0rem !important;
+        }
+        .metric-value {
+            font-size: 1.25rem !important;
+        }
+        .metric-title {
+            font-size: 0.65rem !important;
+            letter-spacing: 0.8px;
+        }
+        
+        /* Reduce spacing between stacked vertical columns */
+        div[data-testid="stVerticalBlock"] {
+            gap: 0.5rem !important;
+        }
+        
+        /* Make selectbox options and form fields feel more tap-friendly */
+        .stTextInput>div>div>input, .stSelectbox>div>div>div, .stNumberInput>div>div>input, .stDateInput>div>div>input {
+            height: 40px !important; /* Slightly larger for easier finger tapping */
+            font-size: 0.88rem !important;
+        }
+        
+        /* Compact tab menu on mobile */
+        button[data-baseweb="tab"] {
+            padding: 6px 10px !important;
+            font-size: 0.78rem !important;
+        }
+        
+        /* Compact list items padding */
+        .tx-feed-item {
+            padding: 8px 10px !important;
+        }
+    }
     </style>
     """, unsafe_allow_html=True)
 
