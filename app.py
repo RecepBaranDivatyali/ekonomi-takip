@@ -2145,35 +2145,62 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
             for tx in filtered_txs:
                 sign = "+" if tx['type'] == 'Gelir' else "-"
                 tx_desc_text = tx['description'] if tx['description'] else tx['category_name']
-                amt_color_prefix = ":green" if tx['type'] == 'Gelir' else ":red"
+                amt_color = "#10B981" if tx['type'] == 'Gelir' else "#EF4444"
                 amt_formatted = f"{sign} {tx['amount']:,.2f} TL"
-                amt_text = f"{amt_color_prefix}[{amt_formatted}]"
+                
+                # Dynamic style block to absolute-position the amount (strong) and date (code) inside expander header
+                st.markdown(f"""
+                <style>
+                div[data-testid="stExpander"]:has(#tx-id-{tx['id']}) > details > summary {{
+                    padding-right: 150px !important;
+                    position: relative !important;
+                }}
+                div[data-testid="stExpander"]:has(#tx-id-{tx['id']}) > details > summary em {{
+                    background-color: {tx['color']}15 !important;
+                    color: {tx['color']} !important;
+                    border: 1px solid {tx['color']}30 !important;
+                    font-style: normal !important;
+                    padding: 2px 8px !important;
+                    border-radius: 8px !important;
+                    font-size: 0.72rem !important;
+                    font-weight: 600 !important;
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    gap: 4px !important;
+                    white-space: nowrap !important;
+                    margin-right: 6px !important;
+                }}
+                div[data-testid="stExpander"]:has(#tx-id-{tx['id']}) > details > summary strong {{
+                    color: {amt_color} !important;
+                    position: absolute !important;
+                    right: 40px !important;
+                    top: 8px !important;
+                    font-size: 0.90rem !important;
+                    font-weight: 700 !important;
+                }}
+                div[data-testid="stExpander"]:has(#tx-id-{tx['id']}) > details > summary code {{
+                    position: absolute !important;
+                    right: 40px !important;
+                    bottom: 8px !important;
+                    background: transparent !important;
+                    border: none !important;
+                    padding: 0 !important;
+                    margin: 0 !important;
+                    color: #94A3B8 !important;
+                    font-size: 0.7rem !important;
+                    font-weight: 400 !important;
+                    font-family: inherit !important;
+                }}
+                </style>
+                """, unsafe_allow_html=True)
                 
                 if tx['category_name']:
-                    st.markdown(f"""
-                    <style>
-                    div[data-testid="stExpander"]:has(#tx-id-{tx['id']}) > details > summary em {{
-                        background-color: {tx['color']}15 !important;
-                        color: {tx['color']} !important;
-                        border: 1px solid {tx['color']}30 !important;
-                        font-style: normal !important;
-                        padding: 2px 8px !important;
-                        border-radius: 8px !important;
-                        font-size: 0.72rem !important;
-                        font-weight: 600 !important;
-                        display: inline-flex !important;
-                        align-items: center !important;
-                        gap: 4px !important;
-                        white-space: nowrap !important;
-                        margin-right: 6px !important;
-                    }}
-                    </style>
-                    """, unsafe_allow_html=True)
                     cat_prefix = f"_{tx['emoji']} {tx['category_name']}_ · "
                 else:
                     cat_prefix = ""
                     
-                with st.expander(f"{cat_prefix}{tx_desc_text}  —  {amt_text}  ·  📅 {tx['date']}", expanded=False):
+                exp_title = f"{cat_prefix}{tx_desc_text} **{amt_formatted}** `{tx['date']}`"
+                with st.expander(exp_title, expanded=False):
                     st.markdown(f'<div id="tx-id-{tx["id"]}"></div>', unsafe_allow_html=True)
                     tx_type_lbl = "🟢 Gelir" if tx['type'] == 'Gelir' else "🔴 Gider"
                     time_lbl = f" | 🕒 Saat: {tx['time_range']}" if tx.get('time_range') else " | 🕒 Saat: Belirsiz"
