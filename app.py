@@ -1717,45 +1717,26 @@ def inject_custom_css():
             if (input.dataset.amountFormatted) return;
             input.dataset.amountFormatted = "true";
             
-            function syncToReact() {
-                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                if (nativeInputValueSetter) {
-                    nativeInputValueSetter.call(input, input.value);
-                }
-                input.dispatchEvent(new Event('input', { bubbles: true }));
-                input.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-            
             input.addEventListener('input', function(e) {
                 if (e.isTrusted === false) return;
-                e.stopPropagation();
                 
                 let cursorPosition = input.selectionStart;
                 let originalLength = input.value.length;
                 
                 let formatted = formatTurkishCurrency(input.value);
                 
-                input.value = formatted;
+                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                if (nativeInputValueSetter) {
+                    nativeInputValueSetter.call(input, formatted);
+                } else {
+                    input.value = formatted;
+                }
+                input.dispatchEvent(new Event('input', { bubbles: true }));
                 
                 let newLength = formatted.length;
                 let diff = newLength - originalLength;
                 
                 input.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
-            });
-            
-            input.addEventListener('change', function(e) {
-                if (e.isTrusted === false) return;
-                e.stopPropagation();
-            });
-            
-            input.addEventListener('blur', function() {
-                syncToReact();
-            });
-            
-            input.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    syncToReact();
-                }
             });
         }
 
