@@ -1378,6 +1378,57 @@ def inject_custom_css():
         }
     }
     
+    /* Style for Emoji Radio Grid (WhatsApp style, zero reruns) */
+    div[data-testid="stHorizontalBlock"]:has(.emoji-radio-marker) div[data-testid="stRadio"] > div[role="radiogroup"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        justify-content: flex-start !important;
+        gap: 6px !important;
+        width: 100% !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has(.emoji-radio-marker) div[data-testid="stRadio"] > div[role="radiogroup"] label {
+        font-size: 1.25rem !important;
+        padding: 0 !important;
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        min-height: 38px !important;
+        border-radius: 8px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background-color: #F1F5F9 !important;
+        border: 1px solid #E2E8F0 !important;
+        transition: all 0.2s ease-in-out !important;
+        cursor: pointer !important;
+        margin: 0 !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has(.emoji-radio-marker) div[data-testid="stRadio"] > div[role="radiogroup"] label:hover {
+        background-color: #E2E8F0 !important;
+        transform: scale(1.1) !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has(.emoji-radio-marker) div[data-testid="stRadio"] > div[role="radiogroup"] label:has(input:checked) {
+        background-color: #3B82F6 !important;
+        border-color: #60A5FA !important;
+        color: white !important;
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.4) !important;
+    }
+    /* Hide the default radio circle/dot */
+    div[data-testid="stHorizontalBlock"]:has(.emoji-radio-marker) div[data-testid="stRadio"] > div[role="radiogroup"] label input[type="radio"] + div {
+        display: none !important;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+        div[data-testid="stHorizontalBlock"]:has(.emoji-radio-marker) div[data-testid="stRadio"] > div[role="radiogroup"] label {
+            background-color: #334155 !important;
+            border-color: #475569 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.emoji-radio-marker) div[data-testid="stRadio"] > div[role="radiogroup"] label:hover {
+            background-color: #475569 !important;
+        }
+    }
+    
     /* Mobile-specific adjustments for native-app feel */
     @media (max-width: 768px) {
         /* Reduce side padding on mobile to maximize content width */
@@ -2573,24 +2624,20 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
         st.markdown('<span class="cat-page-marker"></span>', unsafe_allow_html=True)
         if edit_cat:
             st.markdown(f"### ✏️ Kategoriyi Düzenle (ID: #{edit_cat['id']})")
-            cat_name = st.text_input("Kategori Adı", value=edit_cat['name'], key="edit_cat_name")
-            cat_type = st.radio("Kategori Türü", ["Gider", "Gelir"], 
-                                 index=0 if edit_cat['type'] == 'Gider' else 1, 
-                                 horizontal=True, key="edit_cat_type")
             
-            if "edit_cat_color_val" not in st.session_state or st.session_state.get("edit_cat_id_current") != edit_cat['id']:
-                st.session_state.edit_cat_color_val = edit_cat['color']
-                st.session_state.edit_cat_id_current = edit_cat['id']
-                st.session_state.edit_cat_emoji_val = edit_cat['emoji']
+            with st.form("edit_category_form", clear_on_submit=False):
+                cat_name = st.text_input("Kategori Adı", value=edit_cat['name'], key="edit_cat_name")
+                cat_type = st.radio("Kategori Türü", ["Gider", "Gelir"], 
+                                     index=0 if edit_cat['type'] == 'Gider' else 1, 
+                                     horizontal=True, key="edit_cat_type")
                 
-            st.markdown('<span class="cat-color-emoji-marker"></span>', unsafe_allow_html=True)
-            col_color, col_emoji = st.columns([1, 1])
-            with col_color:
-                cat_color = st.color_picker("Kategori Rengi", value=st.session_state.edit_cat_color_val, key="edit_cat_color_picker")
-                st.session_state.edit_cat_color_val = cat_color
-            with col_emoji:
-                st.markdown("<div style='margin-bottom: 8px; font-weight: 500; font-size: 0.88rem;'>Kategori Simgesi</div>", unsafe_allow_html=True)
-                with st.expander(st.session_state.edit_cat_emoji_val, expanded=False):
+                st.markdown('<span class="cat-color-emoji-marker"></span>', unsafe_allow_html=True)
+                col_color, col_emoji = st.columns([1, 1])
+                with col_color:
+                    cat_color = st.color_picker("Kategori Rengi", value=edit_cat['color'], key="edit_cat_color_picker")
+                with col_emoji:
+                    st.markdown("<div style='margin-bottom: 8px; font-weight: 500; font-size: 0.88rem;'>Kategori Simgesi</div>", unsafe_allow_html=True)
+                    st.markdown('<span class="emoji-radio-marker"></span>', unsafe_allow_html=True)
                     emoji_options = [
                         "🧭", "🏃", "🗺️", "👟", "🏆", "🎓",
                         "🌲", "🏕️", "🪵", "🎒", "🩹", "🏥",
@@ -2598,30 +2645,29 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
                         "🪙", "💰", "💵", "💳", "🤝", "🛒",
                         "✈️", "🍿", "🎮", "🐾", "🎁", "🛠️"
                     ]
+                    try:
+                        default_emoji_idx = emoji_options.index(edit_cat['emoji'])
+                    except ValueError:
+                        default_emoji_idx = 0
+                        
+                    selected_emoji = st.radio(
+                        "Kategori Simgesi Radio",
+                        options=emoji_options,
+                        index=default_emoji_idx,
+                        horizontal=True,
+                        label_visibility="collapsed",
+                        key="edit_cat_emoji_radio"
+                    )
                     
-                    cols = st.columns(6)
-                    for i, emoji_char in enumerate(emoji_options):
-                        col = cols[i % 6]
-                        if i == 0:
-                            with col:
-                                st.markdown('<span class="emoji-marker"></span>', unsafe_allow_html=True)
-                        is_selected = emoji_char == st.session_state.edit_cat_emoji_val
-                        btn_label = f"• {emoji_char} •" if is_selected else emoji_char
-                        if col.button(btn_label, key=f"edit_emoji_{emoji_char}"):
-                            st.session_state.edit_cat_emoji_val = emoji_char
-                            st.rerun()
-                    
-            col_btn1, col_btn2 = st.columns([1, 1])
-            with col_btn1:
-                submitted = st.button("Değişiklikleri Kaydet", type="primary", key="save_edit_cat_btn")
-            with col_btn2:
-                canceled = st.button("İptal Et", key="cancel_edit_cat_btn")
-                
+                submitted = st.form_submit_button("Değişiklikleri Kaydet", type="primary")
+            
+            canceled = st.button("İptal Et", key="cancel_edit_cat_btn")
+            
             if submitted:
                 if not cat_name.strip():
                     st.error("Kategori adı boş olamaz!")
                 else:
-                    update_category(edit_cat['id'], cat_name.strip(), st.session_state.edit_cat_emoji_val, cat_color, cat_type)
+                    update_category(edit_cat['id'], cat_name.strip(), selected_emoji, cat_color, cat_type)
                     st.session_state.edit_cat_id = None
                     st.toast("Kategori başarıyla güncellendi ve tüm bakiye geçmişi yeniden hesaplandı!", icon="✏️")
                     st.rerun()
@@ -2630,29 +2676,33 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
                 st.rerun()
         else:
             st.markdown("### ➕ Yeni Kategori Oluştur")
-            cat_name = st.text_input("Kategori Adı", placeholder="Örn: Aidat, Ulaşım, Kamp", key="new_cat_name")
-            cat_type = st.radio("Kategori Türü", ["Gider", "Gelir"], index=None, horizontal=True, key="new_cat_type")
             
-            if "new_cat_color" not in st.session_state:
-                st.session_state.new_cat_color = "#64748B"
+            with st.form("new_category_form", clear_on_submit=False):
+                cat_name = st.text_input("Kategori Adı", placeholder="Örn: Aidat, Ulaşım, Kamp", key="new_cat_name")
+                cat_type = st.radio("Kategori Türü", ["Gider", "Gelir"], index=None, horizontal=True, key="new_cat_type")
                 
-            if cat_type is not None:
-                if "last_cat_type" not in st.session_state or st.session_state.last_cat_type != cat_type:
-                    st.session_state.last_cat_type = cat_type
-                    st.session_state.new_cat_color = "#3B82F6" if cat_type == "Gelir" else "#EF4444"
-                
-            st.markdown('<span class="cat-color-emoji-marker"></span>', unsafe_allow_html=True)
-            col_color, col_emoji = st.columns([1, 1])
-            with col_color:
-                cat_color = st.color_picker("Kategori Rengi", value=st.session_state.new_cat_color, key="new_cat_color_picker")
-                st.session_state.new_cat_color = cat_color
-
-            if "new_cat_emoji" not in st.session_state:
-                st.session_state.new_cat_emoji = "🧭"
-                
-            with col_emoji:
-                st.markdown("<div style='margin-bottom: 8px; font-weight: 500; font-size: 0.88rem;'>Kategori Simgesi</div>", unsafe_allow_html=True)
-                with st.expander(st.session_state.new_cat_emoji, expanded=False):
+                st.markdown('<span class="cat-color-emoji-marker"></span>', unsafe_allow_html=True)
+                col_color, col_emoji = st.columns([1, 1])
+                with col_color:
+                    cat_color = st.color_picker("Kategori Rengi", value="#EF4444", key="new_cat_color_picker")
+                with col_emoji:
+                    st.markdown("<div style='margin-bottom: 8px; font-weight: 500; font-size: 0.88rem;'>Kategori Simgesi</div>", unsafe_allow_html=True)
+                    st.markdown('<span class="emoji-radio-marker"></span>', unsafe_allow_html=True)
+                    emoji_options = [
+                        "🧭", "🏃", "🗺️", "Sneaker", "🏆", "🎓",
+                        "🌲", "🏕️", "🪵", "🎒", "🩹", "🏥",
+                        "🍕", "🥤", "🍽️", "👕", "🏠", "🚗",
+                        "🪙", "💰", "💵", "💳", "🤝", "🛒",
+                        "✈️", "🍿", "🎮", "🐾", "🎁", "🛠️"
+                    ]
+                    # Make sure the emoji list is identical
+                    emoji_options = [
+                        "🧭", "🏃", "🗺️", "Sneaker", "🏆", "🎓",
+                        "🌲", "🏕️", "🪵", "🎒", "🩹", "🏥",
+                        "🍕", "🥤", "🍽️", "👕", "🏠", "🚗",
+                        "🪙", "💰", "💵", "💳", "🤝", "🛒",
+                        "✈️", "🍿", "🎮", "🐾", "🎁", "🛠️"
+                    ]
                     emoji_options = [
                         "🧭", "🏃", "🗺️", "👟", "🏆", "🎓",
                         "🌲", "🏕️", "🪵", "🎒", "🩹", "🏥",
@@ -2660,31 +2710,25 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
                         "🪙", "💰", "💵", "💳", "🤝", "🛒",
                         "✈️", "🍿", "🎮", "🐾", "🎁", "🛠️"
                     ]
+                    selected_emoji = st.radio(
+                        "Kategori Simgesi Radio",
+                        options=emoji_options,
+                        index=0,
+                        horizontal=True,
+                        label_visibility="collapsed",
+                        key="new_cat_emoji_radio"
+                    )
                     
-                    cols = st.columns(6)
-                    for i, emoji_char in enumerate(emoji_options):
-                        col = cols[i % 6]
-                        if i == 0:
-                            with col:
-                                st.markdown('<span class="emoji-marker"></span>', unsafe_allow_html=True)
-                        is_selected = emoji_char == st.session_state.new_cat_emoji
-                        btn_label = f"• {emoji_char} •" if is_selected else emoji_char
-                        if col.button(btn_label, key=f"new_emoji_{emoji_char}"):
-                            st.session_state.new_cat_emoji = emoji_char
-                            st.rerun()
-                    
-            submitted = st.button("Kategoriyi Ekle", type="primary", key="add_cat_btn")
+                submitted = st.form_submit_button("Kategoriyi Ekle", type="primary", key="add_cat_btn")
+                
             if submitted:
                 if not cat_name.strip():
                     st.error("Kategori adı boş olamaz!")
                 elif cat_type is None:
                     st.error("Kategori türü (Gider/Gelir) seçilmesi zorunludur!")
                 else:
-                    add_category(cat_name.strip(), st.session_state.new_cat_emoji, cat_color, cat_type)
-                    st.success(f"'{st.session_state.new_cat_emoji} {cat_name}' kategorisi başarıyla oluşturuldu!")
-                    st.session_state.new_cat_emoji = "🧭"
-                    if "new_cat_type" in st.session_state:
-                        del st.session_state["new_cat_type"]
+                    add_category(cat_name.strip(), selected_emoji, cat_color, cat_type)
+                    st.success(f"'{selected_emoji} {cat_name}' kategorisi başarıyla oluşturuldu!")
                     st.rerun()
                     
     with col_list:
