@@ -5,6 +5,7 @@ import math
 from datetime import datetime, timedelta
 import os
 import requests
+import altair as alt
 
 # Database configuration
 DB_PATH = 'ekonomi.db'
@@ -824,6 +825,49 @@ def get_pending_debts_totals():
             totals[row['type']] = row['total']
         return totals
 # --- UTILS & HELPERS ---
+
+def get_nice_limits(min_val, max_val):
+    if min_val is None or max_val is None:
+        return 0.0, 10.0, 2.0
+    if min_val == max_val:
+        if min_val == 0:
+            return 0.0, 10.0, 2.0
+        padding = abs(min_val) * 0.1
+        min_val -= padding
+        max_val += padding
+    mag = max(abs(min_val), abs(max_val))
+    if mag >= 100000:
+        step = 5000.0
+    elif mag >= 50000:
+        step = 2000.0
+    elif mag >= 10000:
+        step = 1000.0
+    elif mag >= 5000:
+        step = 500.0
+    elif mag >= 1000:
+        step = 100.0
+    elif mag >= 500:
+        step = 50.0
+    elif mag >= 100:
+        step = 5.0
+    elif mag >= 50:
+        step = 5.0
+    elif mag >= 10:
+        step = 2.0
+    elif mag >= 2:
+        step = 1.0
+    else:
+        step = 0.5
+    nice_min = step * math.floor(min_val / step)
+    nice_max = step * math.ceil(max_val / step)
+    if nice_min == nice_max:
+        nice_max += step
+    num_ticks = (nice_max - nice_min) / step
+    if num_ticks > 12:
+        step *= 2
+        nice_min = step * math.floor(min_val / step)
+        nice_max = step * math.ceil(max_val / step)
+    return float(nice_min), float(nice_max), float(step)
 
 def format_turkish_amount(amount):
     if amount is None:
@@ -1901,8 +1945,11 @@ if menu_selection == "📊 Dashboard":
                 position: relative !important;
                 pointer-events: none !important;
                 cursor: default !important;
+                list-style: none !important;
             }}
-            div[data-testid="stExpander"]:has(#dash-tx-id-{tx['id']}) div[data-testid="stExpanderToggleIcon"] {{
+            div[data-testid="stExpander"]:has(#dash-tx-id-{tx['id']}) div[data-testid="stExpanderToggleIcon"],
+            div[data-testid="stExpander"]:has(#dash-tx-id-{tx['id']}) > details > summary svg,
+            div[data-testid="stExpander"]:has(#dash-tx-id-{tx['id']}) > details > summary::marker {{
                 display: none !important;
             }}
             div[data-testid="stExpander"]:has(#dash-tx-id-{tx['id']}):hover {{
@@ -1994,7 +2041,42 @@ if menu_selection == "📊 Dashboard":
             df_log = pd.DataFrame(daily_log)
             df_log['Tarih'] = pd.to_datetime(df_log['date'])
             df_log = df_log.rename(columns={'vault_after_interest': 'Kasa Bakiyesi (TL)', 'interest_earned': 'Günlük Faiz (TL)'})
-            st.line_chart(df_log, x='Tarih', y='Kasa Bakiyesi (TL)', color="#3B82F6")
+            
+            # Calculate Y-axis limits
+            min_val = df_log['Kasa Bakiyesi (TL)'].min()
+            max_val = df_log['Kasa Bakiyesi (TL)'].max()
+            nice_min, nice_max, step = get_nice_limits(min_val, max_val)
+            
+            y_ticks = []
+            curr = nice_min
+            while curr <= nice_max + (step * 0.01):
+                y_ticks.append(curr)
+                curr += step
+                
+            start_date = df_log['Tarih'].min()
+            end_date = df_log['Tarih'].max()
+            
+            line_chart = alt.Chart(df_log).mark_line(
+                color='#3B82F6', 
+                strokeWidth=3,
+                point=alt.OverlayMarkDef(color='#3B82F6', size=40)
+            ).encode(
+                x=alt.X('Tarih:T', title=None, axis=alt.Axis(
+                    values=[start_date, end_date], 
+                    format='%Y-%m-%d', 
+                    labelAngle=0,
+                    grid=True
+                )),
+                y=alt.Y('Kasa Bakiyesi (TL):Q', title=None, scale=alt.Scale(domain=[nice_min, nice_max]), axis=alt.Axis(
+                    values=y_ticks,
+                    format=',.0f'
+                ))
+            ).properties(
+                height=300
+            ).configure_view(
+                strokeWidth=0
+            )
+            st.altair_chart(line_chart, use_container_width=True)
         else:
             st.info("Kasa zaman serisini çizmek için yeterli veri bulunamadı. Lütfen bir gelir/gider işlemi ekleyin.")
             
@@ -2004,7 +2086,42 @@ if menu_selection == "📊 Dashboard":
             df_log = pd.DataFrame(daily_log)
             df_log['Tarih'] = pd.to_datetime(df_log['date'])
             df_log = df_log.rename(columns={'vault_after_interest': 'Kasa Bakiyesi (TL)', 'interest_earned': 'Günlük Faiz (TL)'})
-            st.bar_chart(df_log, x='Tarih', y='Günlük Faiz (TL)', color="#8B5CF6")
+            
+            # Calculate Y-axis limits
+            min_val = df_log['Günlük Faiz (TL)'].min()
+            max_val = df_log['Günlük Faiz (TL)'].max()
+            nice_min, nice_max, step = get_nice_limits(min_val, max_val)
+            
+            y_ticks = []
+            curr = nice_min
+            while curr <= nice_max + (step * 0.01):
+                y_ticks.append(curr)
+                curr += step
+                
+            start_date = df_log['Tarih'].min()
+            end_date = df_log['Tarih'].max()
+            
+            bar_chart = alt.Chart(df_log).mark_bar(
+                color='#8B5CF6',
+                cornerRadiusTopLeft=4,
+                cornerRadiusTopRight=4
+            ).encode(
+                x=alt.X('Tarih:T', title=None, axis=alt.Axis(
+                    values=[start_date, end_date], 
+                    format='%Y-%m-%d', 
+                    labelAngle=0,
+                    grid=False
+                )),
+                y=alt.Y('Günlük Faiz (TL):Q', title=None, scale=alt.Scale(domain=[nice_min, nice_max]), axis=alt.Axis(
+                    values=y_ticks,
+                    format=',.2f'
+                ))
+            ).properties(
+                height=300
+            ).configure_view(
+                strokeWidth=0
+            )
+            st.altair_chart(bar_chart, use_container_width=True)
         else:
             st.info("Kasa zaman serisini çizmek için yeterli veri bulunamadı. Lütfen bir gelir/gider işlemi ekleyin.")
 
