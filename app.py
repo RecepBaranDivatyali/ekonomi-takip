@@ -1321,14 +1321,17 @@ def inject_custom_css():
         }
         
         /* Transaction list inner columns containing edit/delete buttons side-by-side on mobile */
-        div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] .tx-card-marker):not(:has(div[data-testid="stHorizontalBlock"]:has(.tx-card-marker))) div[data-testid="stColumn"]:has(.tx-actions-marker) div[data-testid="stHorizontalBlock"] {
+        div[data-testid="stColumn"]:has(.tx-actions-marker) div[data-testid="stHorizontalBlock"] {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
             align-items: center !important;
             gap: 6px !important;
+            width: 100% !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] .tx-card-marker):not(:has(div[data-testid="stHorizontalBlock"]:has(.tx-card-marker))) div[data-testid="stColumn"]:has(.tx-actions-marker) div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
+        div[data-testid="stColumn"]:has(.tx-actions-marker) div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
             width: auto !important;
+            min-width: 38px !important;
+            max-width: 38px !important;
             flex-grow: 0 !important;
             flex-shrink: 0 !important;
             margin: 0 !important;
@@ -1394,17 +1397,20 @@ def inject_custom_css():
             margin: 0 !important;
         }
 
-        /* Debt tracking list inner columns: buttons aligned side-by-side and centered */
-        div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] .debt-row-marker):not(:has(div[data-testid="stHorizontalBlock"]:has(.debt-row-marker))) div[data-testid="stColumn"]:has(.debt-actions-marker) div[data-testid="stHorizontalBlock"] {
+        /* Debt tracking list inner columns: buttons aligned side-by-side on mobile */
+        div[data-testid="stColumn"]:has(.debt-actions-marker) div[data-testid="stHorizontalBlock"] {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
-            justify-content: center !important;
+            justify-content: flex-start !important;
             align-items: center !important;
             gap: 12px !important;
             width: 100% !important;
+            margin-top: 6px !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] .debt-row-marker):not(:has(div[data-testid="stHorizontalBlock"]:has(.debt-row-marker))) div[data-testid="stColumn"]:has(.debt-actions-marker) div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
+        div[data-testid="stColumn"]:has(.debt-actions-marker) div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
             width: auto !important;
+            min-width: 38px !important;
+            max-width: 38px !important;
             flex-grow: 0 !important;
             flex-shrink: 0 !important;
             margin: 0 !important;
