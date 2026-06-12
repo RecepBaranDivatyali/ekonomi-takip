@@ -972,6 +972,44 @@ def inject_custom_css():
         border-color: #CBD5E1;
     }
     
+    /* Balance Header Grid layout */
+    .balance-header-grid {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+    }
+    .balance-main {
+        font-size: 2.6rem;
+        font-weight: 850;
+        letter-spacing: -1px;
+        background: linear-gradient(135deg, #3B82F6, #10B981);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 2px 8px rgba(59, 130, 246, 0.1));
+        padding: 0 10px;
+    }
+    .balance-badge {
+        font-size: 1.15rem;
+        font-weight: 700;
+        padding: 6px 12px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+    }
+    .badge-payable {
+        color: #EF4444;
+        background: rgba(239, 68, 68, 0.08);
+        border: 1px solid rgba(239, 68, 68, 0.15);
+    }
+    .badge-receivable {
+        color: #10B981;
+        background: rgba(16, 185, 129, 0.08);
+        border: 1px solid rgba(16, 185, 129, 0.15);
+    }
+    
     /* Dark Mode support */
     @media (prefers-color-scheme: dark) {
         .metric-card {
@@ -1114,6 +1152,43 @@ def inject_custom_css():
         /* Compact list items padding */
         .tx-feed-item {
             padding: 8px 10px !important;
+        }
+        
+        /* Balance Header grid on mobile */
+        .balance-header-grid {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            grid-template-areas: 
+                "main main"
+                "payable receivable" !important;
+            gap: 12px 16px !important;
+            justify-items: center !important;
+            align-items: center !important;
+        }
+        .balance-main {
+            grid-area: main !important;
+            font-size: 1.95rem !important;
+            padding: 0 !important;
+            line-height: 1.2 !important;
+        }
+        .balance-badge {
+            font-size: 0.95rem !important;
+            padding: 5px 10px !important;
+            border-radius: 10px !important;
+            width: fit-content !important;
+        }
+        .badge-payable {
+            grid-area: payable !important;
+            justify-self: end !important;
+        }
+        .badge-receivable {
+            grid-area: receivable !important;
+            justify-self: start !important;
+        }
+
+        /* Metric cards vertical gap fix on mobile */
+        .metric-card {
+            margin-bottom: 16px !important;
         }
     }
     </style>
@@ -1281,17 +1356,17 @@ if menu_selection == "📊 Dashboard":
     # 1. Centered Header Display (Main Vault)
     st.markdown(f"""
     <div style="text-align: center; margin: 1.5rem 0; font-family: 'Plus Jakarta Sans', sans-serif;">
-        <div style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;">
+        <div class="balance-header-grid">
             <!-- Left: Payable (Kırmızı) -->
-            <div style="color: #EF4444; font-size: 1.15rem; font-weight: 700; background: rgba(239, 68, 68, 0.08); padding: 6px 12px; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.15);">
+            <div class="balance-badge badge-payable">
                 ( - {total_payable:,.2f} TL )
             </div>
             <!-- Center: Vault -->
-            <div style="font-size: 2.6rem; font-weight: 850; letter-spacing: -1px; background: linear-gradient(135deg, #3B82F6, #10B981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 8px rgba(59, 130, 246, 0.1)); padding: 0 10px;">
+            <div class="balance-main">
                 {current_vault:,.2f} TL
             </div>
             <!-- Right: Receivable (Yeşil) -->
-            <div style="color: #10B981; font-size: 1.15rem; font-weight: 700; background: rgba(16, 185, 129, 0.08); padding: 6px 12px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.15);">
+            <div class="balance-badge badge-receivable">
                 ( + {total_receivable:,.2f} TL )
             </div>
         </div>
