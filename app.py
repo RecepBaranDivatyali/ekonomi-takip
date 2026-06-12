@@ -1226,14 +1226,6 @@ def inject_custom_css():
         padding: 0 !important;
         margin: 0 !important;
     }
-    /* Hide toggle icon and disable click on expanders inside a container marked with dashboard-tx-list-marker */
-    div[data-testid="element-container"]:has(.dashboard-tx-list-marker) ~ div[data-testid="element-container"] div[data-testid="stExpander"] > details > summary {
-        pointer-events: none !important;
-        cursor: default !important;
-    }
-    div[data-testid="element-container"]:has(.dashboard-tx-list-marker) ~ div[data-testid="element-container"] div[data-testid="stExpanderToggleIcon"] {
-        display: none !important;
-    }
     @media (prefers-color-scheme: dark) {
         div[data-testid="stExpander"] {
             border-color: #334155 !important;
@@ -1900,11 +1892,27 @@ if menu_selection == "📊 Dashboard":
             amt_formatted = f"{sign} {tx['amount']:,.2f} TL"
             
             # Dynamic style block to absolute-position the amount (strong) and date (code) inside expander header
+            # Also removes expander animations, hides the chevron icon, and shifts headers left
             st.markdown(f"""
             <style>
             div[data-testid="stExpander"]:has(#dash-tx-id-{tx['id']}) > details > summary {{
                 padding-right: 125px !important;
+                padding-left: 12px !important;
                 position: relative !important;
+                pointer-events: none !important;
+                cursor: default !important;
+            }}
+            div[data-testid="stExpander"]:has(#dash-tx-id-{tx['id']}) div[data-testid="stExpanderToggleIcon"] {{
+                display: none !important;
+            }}
+            div[data-testid="stExpander"]:has(#dash-tx-id-{tx['id']}):hover {{
+                border-color: #E2E8F0 !important;
+                box-shadow: none !important;
+            }}
+            @media (prefers-color-scheme: dark) {{
+                div[data-testid="stExpander"]:has(#dash-tx-id-{tx['id']}):hover {{
+                    border-color: #334155 !important;
+                }}
             }}
             div[data-testid="stExpander"]:has(#dash-tx-id-{tx['id']}) > details > summary em {{
                 background-color: {tx['color']}15 !important;
