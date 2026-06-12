@@ -1718,11 +1718,20 @@ def inject_custom_css():
             input.dataset.amountFormatted = "true";
             
             input.addEventListener('input', function(e) {
+                if (e.isTrusted === false) return;
+                
                 let cursorPosition = input.selectionStart;
                 let originalLength = input.value.length;
                 
                 let formatted = formatTurkishCurrency(input.value);
-                input.value = formatted;
+                
+                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                if (nativeInputValueSetter) {
+                    nativeInputValueSetter.call(input, formatted);
+                } else {
+                    input.value = formatted;
+                }
+                input.dispatchEvent(new Event('input', { bubbles: true }));
                 
                 let newLength = formatted.length;
                 let diff = newLength - originalLength;
