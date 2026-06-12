@@ -823,7 +823,26 @@ def get_pending_debts_totals():
         for row in rows:
             totals[row['type']] = row['total']
         return totals
+# --- UTILS & HELPERS ---
 
+def format_turkish_amount(amount):
+    if amount is None:
+        return ""
+    try:
+        s = f"{float(amount):,.2f}"
+        return s.replace(",", "TEMP").replace(".", ",").replace("TEMP", ".")
+    except (ValueError, TypeError):
+        return ""
+
+def parse_turkish_amount(val_str):
+    if not val_str:
+        return None
+    # Remove dots (thousand separators) and replace comma with dot
+    clean_str = val_str.replace(".", "").replace(",", ".")
+    try:
+        return float(clean_str)
+    except ValueError:
+        return None
 
 # --- UI HELPERS ---
 
@@ -1573,11 +1592,66 @@ def inject_custom_css():
         }
         
         styleOptions();
+        scanMiktarInputs();
         
+        function formatTurkishCurrency(val) {
+            if (val.endsWith('.') && !val.includes(',')) {
+                val = val.slice(0, -1) + ',';
+            }
+            let parts = val.split(',');
+            let integerPart = parts[0].replace(/\\D/g, '') || '';
+            let decimalPart = parts.length > 1 ? parts[1].replace(/\\D/g, '').substring(0, 2) : null;
+            
+            integerPart = integerPart.replace(/\\B(?=(\\d{3})+(?!\\d))/g, ".");
+            
+            if (decimalPart !== null) {
+                return integerPart + ',' + decimalPart;
+            } else {
+                return integerPart;
+            }
+        }
+
+        function setupMiktarInput(input) {
+            if (input.dataset.amountFormatted) return;
+            input.dataset.amountFormatted = "true";
+            
+            input.addEventListener('input', function(e) {
+                let cursorPosition = input.selectionStart;
+                let originalLength = input.value.length;
+                
+                let formatted = formatTurkishCurrency(input.value);
+                input.value = formatted;
+                
+                let newLength = formatted.length;
+                let diff = newLength - originalLength;
+                
+                input.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
+            });
+        }
+
+        function scanMiktarInputs() {
+            try {
+                if (window.parent && window.parent.document) {
+                    const labels = Array.from(window.parent.document.querySelectorAll('label'));
+                    const miktarLabels = labels.filter(el => el.textContent.includes('Miktar (TL)'));
+                    miktarLabels.forEach(label => {
+                        const parent = label.closest('[data-testid="stTextInput"]');
+                        if (parent) {
+                            const input = parent.querySelector('input');
+                            if (input) {
+                                setupMiktarInput(input);
+                            }
+                        }
+                    });
+                }
+            } catch(e) {}
+        }
+
         if (!window.parentCatObserver && window.parent && window.parent.document) {
             try {
                 window.parentCatObserver = new MutationObserver((mutations) => {
                     styleOptions();
+                    scanMiktarInputs();
                 });
                 window.parentCatObserver.observe(window.parent.document.body, { childList: true, subtree: true });
             } catch(e) {}
@@ -1903,7 +1977,7 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
                 )
                 
             with col_amount:
-                tx_amount = st.number_input("Miktar (TL)", min_value=0.01, value=float(edit_tx['amount']), step=50.0, format="%.2f", key="edit_tx_amount")
+                tx_amount_str = st.text_input("Miktar (TL)", value=format_turkish_amount(edit_tx['amount']), key="edit_tx_amount")
                 
             # Filter categories based on transaction type
             filtered_cats = [c for c in categories if c['type'] == tx_type]
@@ -1939,7 +2013,10 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
                 canceled = st.button("İptal Et / Düzenlemeden Çık", key="cancel_edit_btn")
                 
             if submitted:
-                if selected_cat_id is None:
+                tx_amount = parse_turkish_amount(tx_amount_str)
+                if tx_amount is None or tx_amount <= 0:
+                    st.error("Lütfen geçerli bir miktar girin (Örn: 1.000,50)")
+                elif selected_cat_id is None:
                     st.error("Kategori seçimi zorunludur.")
                 else:
                     date_str = tx_date.strftime('%Y-%m-%d')
@@ -1978,7 +2055,7 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
                 )
                 
             with col_amount:
-                tx_amount = st.number_input("Miktar (TL)", min_value=0.01, step=50.0, format="%.2f")
+                tx_amount_str = st.text_input("Miktar (TL)", value="", key="new_tx_amount")
                 
             # Filter categories based on transaction type
             filtered_cats = [c for c in categories if c['type'] == tx_type] if tx_type else []
@@ -2005,7 +2082,10 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
             submitted = st.button("İşlemi Kaydet", type="primary")
             
             if submitted:
-                if tx_type is None:
+                tx_amount = parse_turkish_amount(tx_amount_str)
+                if tx_amount is None or tx_amount <= 0:
+                    st.error("Lütfen geçerli bir miktar girin (Örn: 1.000,50)")
+                elif tx_type is None:
                     st.error("İşlem türü seçimi zorunludur.")
                 elif selected_cat_id is None:
                     st.error("Kategori seçimi zorunludur.")
@@ -2365,7 +2445,7 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                                  index=0 if edit_debt['type'] == 'Alınacak' else 1, 
                                  horizontal=True, key="edit_debt_type")
             debt_name = st.text_input("Kişi / Kurum Adı", value=edit_debt['name'], key="edit_debt_name")
-            debt_amount = st.number_input("Miktar (TL)", min_value=0.01, value=float(edit_debt['amount']), step=100.0, format="%.2f", key="edit_debt_amount")
+            debt_amount_str = st.text_input("Miktar (TL)", value=format_turkish_amount(edit_debt['amount']), key="edit_debt_amount")
             
             # Filter categories based on debt type:
             # Alınacak -> Gelir categories
@@ -2412,7 +2492,10 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                 canceled = st.button("İptal Et", key="cancel_edit_debt_btn")
                 
             if submitted:
-                if not debt_name.strip():
+                debt_amount = parse_turkish_amount(debt_amount_str)
+                if debt_amount is None or debt_amount <= 0:
+                    st.error("Lütfen geçerli bir miktar girin (Örn: 1.000,50)")
+                elif not debt_name.strip():
                     st.error("Kişi/Kurum adı boş bırakılamaz!")
                 elif selected_cat_id is None:
                     st.error("Kategori seçimi zorunludur. Lütfen geçerli bir kategori seçin.")
@@ -2429,7 +2512,7 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
             st.markdown("### ➕ Yeni Borç Kaydı")
             debt_type = st.radio("Borç Türü", ["Alınacak", "Verilecek"], horizontal=True, help="Alınacak: Bize gelecek para | Verilecek: Bizim ödeyeceğimiz para", key="new_debt_type")
             debt_name = st.text_input("Kişi / Kurum Adı", placeholder="Örn: Ahmet Yılmaz, Spor Genel Md.", key="new_debt_name")
-            debt_amount = st.number_input("Miktar (TL)", min_value=0.01, step=100.0, format="%.2f", key="new_debt_amount")
+            debt_amount_str = st.text_input("Miktar (TL)", value="", key="new_debt_amount")
             
             # Filter categories based on debt type:
             # Alınacak -> Gelir categories
@@ -2457,7 +2540,10 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                 
             submitted = st.button("Borç Ekle", type="primary", key="add_debt_btn")
             if submitted:
-                if not debt_name.strip():
+                debt_amount = parse_turkish_amount(debt_amount_str)
+                if debt_amount is None or debt_amount <= 0:
+                    st.error("Lütfen geçerli bir miktar girin (Örn: 1.000,50)")
+                elif not debt_name.strip():
                     st.error("Kişi/Kurum adı boş bırakılamaz!")
                 elif selected_cat_id is None:
                     st.error("Kategori seçimi zorunludur. Lütfen geçerli bir kategori seçin.")
@@ -2506,13 +2592,32 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                         type_lbl = "🔴 Verilecek" if d['type'] == 'Verilecek' else "🟢 Alınacak"
                         vade_lbl = f" | 📅 Vade: {d['due_date']}" if d['due_date'] else " | 📅 Vade: Belirsiz"
                         badge_html = get_debt_badge_html(d['due_date'])
-                        cat_text = f"  •  {d['category_emoji']} {d['category_name']}" if d['category_name'] else ""
-                        
-                        # Expander label: shows key info, click to open buttons
-                        exp_label = f"**{d['name']}** &nbsp;&nbsp; _{type_lbl}{vade_lbl}{cat_text}_"
-                        
-                        cat_prefix = f"{d['category_emoji']} {d['category_name']}  ·  " if d['category_name'] else ""
+                        if d['category_name']:
+                            st.markdown(f"""
+                            <style>
+                            div[data-testid="stExpander"]:has(#debt-id-{d['id']}) > details > summary em {{
+                                background-color: {d['category_color']}15 !important;
+                                color: {d['category_color']} !important;
+                                border: 1px solid {d['category_color']}30 !important;
+                                font-style: normal !important;
+                                padding: 2px 8px !important;
+                                border-radius: 8px !important;
+                                font-size: 0.72rem !important;
+                                font-weight: 600 !important;
+                                display: inline-flex !important;
+                                align-items: center !important;
+                                gap: 4px !important;
+                                white-space: nowrap !important;
+                                margin-right: 6px !important;
+                            }}
+                            </style>
+                            """, unsafe_allow_html=True)
+                            cat_prefix = f"_{d['category_emoji']} {d['category_name']}_ · "
+                        else:
+                            cat_prefix = ""
+                            
                         with st.expander(f"{cat_prefix}{d['name']}  —  {d['amount']:,.2f} TL  {type_lbl.split()[0]}", expanded=False):
+                            st.markdown(f'<div id="debt-id-{d["id"]}"></div>', unsafe_allow_html=True)
                             # Card detail row inside expander
                             if d['category_name']:
                                 cat_badge = f"<span style='background-color: {d['category_color']}15; color: {d['category_color']}; padding: 2px 8px; border-radius: 8px; font-weight: 600; font-size: 0.75rem; border: 1px solid {d['category_color']}30; display: inline-flex; align-items: center; gap: 4px;'><span style='font-size: 0.8rem;'>{d['category_emoji']}</span><span>{d['category_name']}</span></span>"
@@ -2552,8 +2657,32 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                         color = "#94A3B8"
                         type_lbl = "Verilecek" if d['type'] == 'Verilecek' else "Alınacak"
                         
-                        cat_prefix = f"{d['category_emoji']} {d['category_name']}  ·  " if d['category_name'] else ""
+                        if d['category_name']:
+                            st.markdown(f"""
+                            <style>
+                            div[data-testid="stExpander"]:has(#debt-id-{d['id']}) > details > summary em {{
+                                background-color: {d['category_color']}15 !important;
+                                color: {d['category_color']} !important;
+                                border: 1px solid {d['category_color']}30 !important;
+                                font-style: normal !important;
+                                padding: 2px 8px !important;
+                                border-radius: 8px !important;
+                                font-size: 0.72rem !important;
+                                font-weight: 600 !important;
+                                display: inline-flex !important;
+                                align-items: center !important;
+                                gap: 4px !important;
+                                white-space: nowrap !important;
+                                margin-right: 6px !important;
+                            }}
+                            </style>
+                            """, unsafe_allow_html=True)
+                            cat_prefix = f"_{d['category_emoji']} {d['category_name']}_ · "
+                        else:
+                            cat_prefix = ""
+                            
                         with st.expander(f"✅ {cat_prefix}{d['name']}  —  {d['amount']:,.2f} TL  ({type_lbl})", expanded=False):
+                            st.markdown(f'<div id="debt-id-{d["id"]}"></div>', unsafe_allow_html=True)
                             if d['category_name']:
                                 cat_badge = f"<span style='background-color: {d['category_color']}15; color: {d['category_color']}; padding: 2px 8px; border-radius: 8px; font-weight: 600; font-size: 0.75rem; border: 1px solid {d['category_color']}30; display: inline-flex; align-items: center; gap: 4px;'><span style='font-size: 0.8rem;'>{d['category_emoji']}</span><span>{d['category_name']}</span></span>"
                             else:
