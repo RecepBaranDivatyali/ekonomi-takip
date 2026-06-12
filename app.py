@@ -835,38 +835,47 @@ def get_nice_limits(min_val, max_val):
         padding = abs(min_val) * 0.1
         min_val -= padding
         max_val += padding
+        
+    diff = max_val - min_val
+    
+    # Calculate a raw step size targeting around 6-8 levels
+    raw_step = diff / 6.0
+    power = 10.0 ** math.floor(math.log10(raw_step)) if raw_step > 0 else 1.0
+    norm_step = raw_step / power
+    
+    if norm_step <= 1.0:
+        step = 1.0 * power
+    elif norm_step <= 2.0:
+        step = 2.0 * power
+    elif norm_step <= 5.0:
+        step = 5.0 * power
+    else:
+        step = 10.0 * power
+        
+    # Enforce minimum step size based on magnitude to keep ticks clean and rounded
     mag = max(abs(min_val), abs(max_val))
     if mag >= 100000:
-        step = 5000.0
-    elif mag >= 50000:
-        step = 2000.0
-    elif mag >= 10000:
-        step = 1000.0
-    elif mag >= 5000:
-        step = 500.0
+        step = max(step, 1000.0) # at least 1,000 TL steps for vault
     elif mag >= 1000:
-        step = 100.0
-    elif mag >= 500:
-        step = 50.0
+        step = max(step, 10.0)
     elif mag >= 100:
-        step = 5.0
-    elif mag >= 50:
-        step = 5.0
+        step = max(step, 5.0) # at least 5.0 TL steps for interest in hundreds
     elif mag >= 10:
-        step = 2.0
-    elif mag >= 2:
-        step = 1.0
-    else:
-        step = 0.5
+        step = max(step, 1.0)
+        
     nice_min = step * math.floor(min_val / step)
     nice_max = step * math.ceil(max_val / step)
+    
     if nice_min == nice_max:
         nice_max += step
+        
+    # Double check if there are too many ticks
     num_ticks = (nice_max - nice_min) / step
     if num_ticks > 12:
         step *= 2
         nice_min = step * math.floor(min_val / step)
         nice_max = step * math.ceil(max_val / step)
+        
     return float(nice_min), float(nice_max), float(step)
 
 def format_turkish_amount(amount):
@@ -2040,11 +2049,11 @@ if menu_selection == "📊 Dashboard":
         if daily_log:
             df_log = pd.DataFrame(daily_log)
             df_log['Tarih'] = pd.to_datetime(df_log['date'])
-            df_log = df_log.rename(columns={'vault_after_interest': 'Kasa Bakiyesi (TL)', 'interest_earned': 'Günlük Faiz (TL)'})
+            df_log = df_log.rename(columns={'vault_after_interest': 'vault_balance', 'interest_earned': 'daily_interest'})
             
             # Calculate Y-axis limits
-            min_val = df_log['Kasa Bakiyesi (TL)'].min()
-            max_val = df_log['Kasa Bakiyesi (TL)'].max()
+            min_val = df_log['vault_balance'].min()
+            max_val = df_log['vault_balance'].max()
             nice_min, nice_max, step = get_nice_limits(min_val, max_val)
             
             y_ticks = []
@@ -2067,7 +2076,7 @@ if menu_selection == "📊 Dashboard":
                     labelAngle=0,
                     grid=True
                 )),
-                y=alt.Y('Kasa Bakiyesi (TL):Q', title=None, scale=alt.Scale(domain=[nice_min, nice_max]), axis=alt.Axis(
+                y=alt.Y('vault_balance:Q', title=None, scale=alt.Scale(domain=[nice_min, nice_max]), axis=alt.Axis(
                     values=y_ticks,
                     format=',.0f'
                 ))
@@ -2085,11 +2094,11 @@ if menu_selection == "📊 Dashboard":
         if daily_log:
             df_log = pd.DataFrame(daily_log)
             df_log['Tarih'] = pd.to_datetime(df_log['date'])
-            df_log = df_log.rename(columns={'vault_after_interest': 'Kasa Bakiyesi (TL)', 'interest_earned': 'Günlük Faiz (TL)'})
+            df_log = df_log.rename(columns={'vault_after_interest': 'vault_balance', 'interest_earned': 'daily_interest'})
             
             # Calculate Y-axis limits
-            min_val = df_log['Günlük Faiz (TL)'].min()
-            max_val = df_log['Günlük Faiz (TL)'].max()
+            min_val = df_log['daily_interest'].min()
+            max_val = df_log['daily_interest'].max()
             nice_min, nice_max, step = get_nice_limits(min_val, max_val)
             
             y_ticks = []
@@ -2103,6 +2112,7 @@ if menu_selection == "📊 Dashboard":
             
             bar_chart = alt.Chart(df_log).mark_bar(
                 color='#8B5CF6',
+                size=12,
                 cornerRadiusTopLeft=4,
                 cornerRadiusTopRight=4
             ).encode(
@@ -2112,7 +2122,7 @@ if menu_selection == "📊 Dashboard":
                     labelAngle=0,
                     grid=False
                 )),
-                y=alt.Y('Günlük Faiz (TL):Q', title=None, scale=alt.Scale(domain=[nice_min, nice_max]), axis=alt.Axis(
+                y=alt.Y('daily_interest:Q', title=None, scale=alt.Scale(domain=[nice_min, nice_max]), axis=alt.Axis(
                     values=y_ticks,
                     format=',.2f'
                 ))
