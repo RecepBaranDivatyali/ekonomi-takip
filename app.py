@@ -1379,7 +1379,7 @@ def inject_custom_css():
     }
     
     /* Style for Emoji Radio Grid (WhatsApp style, zero reruns) */
-    div[data-testid="stHorizontalBlock"]:has(.emoji-radio-marker) div[data-testid="stRadio"] > div[role="radiogroup"] {
+    .emoji-radio-container div[data-testid="stRadio"] > div[role="radiogroup"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: wrap !important;
@@ -1387,7 +1387,7 @@ def inject_custom_css():
         gap: 6px !important;
         width: 100% !important;
     }
-    div[data-testid="stHorizontalBlock"]:has(.emoji-radio-marker) div[data-testid="stRadio"] > div[role="radiogroup"] label {
+    .emoji-radio-container div[data-testid="stRadio"] > div[role="radiogroup"] label {
         font-size: 1.25rem !important;
         padding: 0 !important;
         width: 38px !important;
@@ -1404,27 +1404,35 @@ def inject_custom_css():
         cursor: pointer !important;
         margin: 0 !important;
     }
-    div[data-testid="stHorizontalBlock"]:has(.emoji-radio-marker) div[data-testid="stRadio"] > div[role="radiogroup"] label:hover {
+    .emoji-radio-container div[data-testid="stRadio"] > div[role="radiogroup"] label:hover {
         background-color: #E2E8F0 !important;
         transform: scale(1.1) !important;
     }
-    div[data-testid="stHorizontalBlock"]:has(.emoji-radio-marker) div[data-testid="stRadio"] > div[role="radiogroup"] label:has(input:checked) {
+    .emoji-radio-container div[data-testid="stRadio"] > div[role="radiogroup"] label:has(input:checked) {
         background-color: #3B82F6 !important;
         border-color: #60A5FA !important;
         color: white !important;
         box-shadow: 0 0 8px rgba(59, 130, 246, 0.4) !important;
     }
     /* Hide the default radio circle/dot */
-    div[data-testid="stHorizontalBlock"]:has(.emoji-radio-marker) div[data-testid="stRadio"] > div[role="radiogroup"] label input[type="radio"] + div {
+    .emoji-radio-container div[data-testid="stRadio"] > div[role="radiogroup"] label > div:first-child {
         display: none !important;
+    }
+    /* Strip margins and center the emoji label text */
+    .emoji-radio-container div[data-testid="stRadio"] > div[role="radiogroup"] label > div:last-child {
+        margin: 0 !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     
     @media (prefers-color-scheme: dark) {
-        div[data-testid="stHorizontalBlock"]:has(.emoji-radio-marker) div[data-testid="stRadio"] > div[role="radiogroup"] label {
+        .emoji-radio-container div[data-testid="stRadio"] > div[role="radiogroup"] label {
             background-color: #334155 !important;
             border-color: #475569 !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.emoji-radio-marker) div[data-testid="stRadio"] > div[role="radiogroup"] label:hover {
+        .emoji-radio-container div[data-testid="stRadio"] > div[role="radiogroup"] label:hover {
             background-color: #475569 !important;
         }
     }
@@ -2637,7 +2645,7 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
                     cat_color = st.color_picker("Kategori Rengi", value=edit_cat['color'], key="edit_cat_color_picker")
                 with col_emoji:
                     st.markdown("<div style='margin-bottom: 8px; font-weight: 500; font-size: 0.88rem;'>Kategori Simgesi</div>", unsafe_allow_html=True)
-                    st.markdown('<span class="emoji-radio-marker"></span>', unsafe_allow_html=True)
+                    st.markdown('<div class="emoji-radio-container">', unsafe_allow_html=True)
                     emoji_options = [
                         "🧭", "🏃", "🗺️", "👟", "🏆", "🎓",
                         "🌲", "🏕️", "🪵", "🎒", "🩹", "🏥",
@@ -2658,6 +2666,7 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
                         label_visibility="collapsed",
                         key="edit_cat_emoji_radio"
                     )
+                    st.markdown('</div>', unsafe_allow_html=True)
                     
                 submitted = st.form_submit_button("Değişiklikleri Kaydet", type="primary")
             
@@ -2687,22 +2696,7 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
                     cat_color = st.color_picker("Kategori Rengi", value="#EF4444", key="new_cat_color_picker")
                 with col_emoji:
                     st.markdown("<div style='margin-bottom: 8px; font-weight: 500; font-size: 0.88rem;'>Kategori Simgesi</div>", unsafe_allow_html=True)
-                    st.markdown('<span class="emoji-radio-marker"></span>', unsafe_allow_html=True)
-                    emoji_options = [
-                        "🧭", "🏃", "🗺️", "Sneaker", "🏆", "🎓",
-                        "🌲", "🏕️", "🪵", "🎒", "🩹", "🏥",
-                        "🍕", "🥤", "🍽️", "👕", "🏠", "🚗",
-                        "🪙", "💰", "💵", "💳", "🤝", "🛒",
-                        "✈️", "🍿", "🎮", "🐾", "🎁", "🛠️"
-                    ]
-                    # Make sure the emoji list is identical
-                    emoji_options = [
-                        "🧭", "🏃", "🗺️", "Sneaker", "🏆", "🎓",
-                        "🌲", "🏕️", "🪵", "🎒", "🩹", "🏥",
-                        "🍕", "🥤", "🍽️", "👕", "🏠", "🚗",
-                        "🪙", "💰", "💵", "💳", "🤝", "🛒",
-                        "✈️", "🍿", "🎮", "🐾", "🎁", "🛠️"
-                    ]
+                    st.markdown('<div class="emoji-radio-container">', unsafe_allow_html=True)
                     emoji_options = [
                         "🧭", "🏃", "🗺️", "👟", "🏆", "🎓",
                         "🌲", "🏕️", "🪵", "🎒", "🩹", "🏥",
@@ -2718,6 +2712,7 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
                         label_visibility="collapsed",
                         key="new_cat_emoji_radio"
                     )
+                    st.markdown('</div>', unsafe_allow_html=True)
                     
                 submitted = st.form_submit_button("Kategoriyi Ekle", type="primary", key="add_cat_btn")
                 
