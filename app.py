@@ -1074,17 +1074,18 @@ def inject_custom_css():
     /* Target small action buttons to be compact and styled */
     div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] button {
         padding: 2px 4px !important;
-        min-width: 28px !important;
-        min-height: 28px !important;
-        height: 28px !important;
-        border-radius: 8px !important;
-        font-size: 0.8rem !important;
+        min-width: 32px !important;
+        min-height: 32px !important;
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 50% !important; /* Circle buttons */
+        font-size: 0.85rem !important;
         line-height: 1 !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
         margin: 0 !important;
-        background-color: transparent !important;
+        background-color: #F8FAFC !important;
         border: 1px solid #E2E8F0 !important;
         box-shadow: none !important;
         color: inherit !important;
@@ -1094,16 +1095,48 @@ def inject_custom_css():
     div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] button:hover {
         background-color: #F1F5F9 !important;
         border-color: #CBD5E1 !important;
-        transform: scale(1.05) !important;
+        transform: scale(1.1) !important;
     }
     
     @media (prefers-color-scheme: dark) {
         div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] button {
+            background-color: #1E293B !important;
             border-color: #334155 !important;
         }
         div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] button:hover {
             background-color: #334155 !important;
             border-color: #475569 !important;
+        }
+    }
+    
+    /* Style for Emoji Grid Buttons */
+    div[data-testid="stHorizontalBlock"]:has(.emoji-marker) button {
+        font-size: 1.2rem !important;
+        padding: 4px !important;
+        width: 100% !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        min-height: 38px !important;
+        border-radius: 10px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background-color: #F1F5F9 !important;
+        border: 1px solid #E2E8F0 !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has(.emoji-marker) button:hover {
+        background-color: #E2E8F0 !important;
+        transform: scale(1.1) !important;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+        div[data-testid="stHorizontalBlock"]:has(.emoji-marker) button {
+            background-color: #334155 !important;
+            border-color: #475569 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.emoji-marker) button:hover {
+            background-color: #475569 !important;
         }
     }
     
@@ -1189,6 +1222,36 @@ def inject_custom_css():
         /* Metric cards vertical gap fix on mobile */
         .metric-card {
             margin-bottom: 16px !important;
+        }
+
+        /* Emoji selector grid on mobile: force it to stay in a 6-column grid */
+        div[data-testid="stHorizontalBlock"]:has(.emoji-marker) {
+            display: grid !important;
+            grid-template-columns: repeat(6, 1fr) !important;
+            gap: 6px !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.emoji-marker) > div[data-testid="stColumn"] {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Transaction row layout on mobile: keep item and action buttons in a single row */
+        div[data-testid="stHorizontalBlock"]:has(.tx-feed-item) {
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
+            gap: 6px !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.tx-feed-item) > div[data-testid="stColumn"] {
+            width: auto !important;
+            flex-grow: 0 !important;
+            flex-shrink: 0 !important;
+            margin: 0 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.tx-feed-item) > div[data-testid="stColumn"]:first-child {
+            flex-grow: 1 !important;
+            flex-shrink: 1 !important;
         }
     }
     </style>
@@ -1598,7 +1661,7 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
             col_type, col_date, col_time, col_amount = st.columns([3, 3, 4, 3])
             
             with col_type:
-                tx_type = st.radio("İşlem Türü", ["Gider", "Gelir"], horizontal=True)
+                tx_type = st.radio("İşlem Türü", ["Gider", "Gelir"], index=None, horizontal=True)
             
             with col_date:
                 tx_date = st.date_input("Tarih", today_date, max_value=today_date)
@@ -1621,11 +1684,14 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
                 tx_amount = st.number_input("Miktar (TL)", min_value=0.01, step=50.0, format="%.2f")
                 
             # Filter categories based on transaction type
-            filtered_cats = [c for c in categories if c['type'] == tx_type]
+            filtered_cats = [c for c in categories if c['type'] == tx_type] if tx_type else []
             
             col_cat, col_desc = st.columns([1, 2])
             with col_cat:
-                if filtered_cats:
+                if tx_type is None:
+                    st.info("Kategori listelemek için lütfen işlem türü seçin.")
+                    selected_cat_id = None
+                elif filtered_cats:
                     cat_options = {c['id']: f"{c['emoji']} {c['name']}" for c in filtered_cats}
                     selected_cat_id = st.selectbox(
                         "Kategori", 
@@ -1642,7 +1708,9 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
             submitted = st.button("İşlemi Kaydet", type="primary")
             
             if submitted:
-                if selected_cat_id is None:
+                if tx_type is None:
+                    st.error("İşlem türü seçimi zorunludur.")
+                elif selected_cat_id is None:
                     st.error("Kategori seçimi zorunludur.")
                 else:
                     date_str = tx_date.strftime('%Y-%m-%d')
@@ -1660,6 +1728,28 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
     else:
         # Search & Filter
         search_query = st.text_input("🔍 Açıklama veya kategori ara...", "").lower()
+        
+        # Deletion confirmation
+        if st.session_state.get('confirm_delete_id'):
+            del_id = st.session_state.confirm_delete_id
+            del_tx = next((t for t in all_txs if t['id'] == del_id), None)
+            if del_tx:
+                st.warning(f"⚠️ **Seçilen işlemi silmek istediğinize emin misiniz?**\n\n**{del_tx['date']} | {del_tx['category_emoji']} {del_tx['category_name']} | {del_tx['description'] or ''} | {del_tx['amount']:,.2f} TL**")
+                col_yes, col_no = st.columns([1, 1])
+                with col_yes:
+                    if st.button("Evet, Sil", key="btn_confirm_del_yes", type="primary"):
+                        delete_transaction(del_id)
+                        if st.session_state.get('edit_tx_id') == del_id:
+                            st.session_state.edit_tx_id = None
+                        st.session_state.confirm_delete_id = None
+                        st.toast("İşlem silindi, bakiye yeniden hesaplandı.", icon="🗑️")
+                        st.rerun()
+                with col_no:
+                    if st.button("İptal Et", key="btn_confirm_del_no"):
+                        st.session_state.confirm_delete_id = None
+                        st.rerun()
+            else:
+                st.session_state.confirm_delete_id = None
         
         filtered_txs = []
         for tx in all_txs:
@@ -1691,10 +1781,7 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
                         
                 with col_del:
                     if st.button("🗑️", key=f"del_tx_{tx['id']}", help="İşlemi Sil"):
-                        delete_transaction(tx['id'])
-                        if st.session_state.get('edit_tx_id') == tx['id']:
-                            st.session_state.edit_tx_id = None
-                        st.toast("İşlem silindi, bakiye yeniden hesaplandı.", icon="🗑️")
+                        st.session_state.confirm_delete_id = tx['id']
                         st.rerun()
 
 
@@ -1738,17 +1825,19 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
             st.session_state.edit_cat_color_val = cat_color
 
             st.markdown(f"**Rozet Simgesi:** <span style='font-size: 1.3rem; margin-left: 10px;'>{st.session_state.edit_cat_emoji_val}</span>", unsafe_allow_html=True)
+            st.markdown("<div class='emoji-marker'></div>", unsafe_allow_html=True)
             
             emoji_options = [
-                "🧭", "🏃", "🗺️", "👟", "🏆", 
-                "🌲", "🏕️", "🪵", "🎒", "🩹", 
-                "🍕", "🥤", "🍽️", "👕", "🏠", 
-                "🪙", "💰", "💵", "💳", "🤝"
+                "🧭", "🏃", "🗺️", "👟", "🏆", "🎓",
+                "🌲", "🏕️", "🪵", "🎒", "🩹", "🏥",
+                "🍕", "🥤", "🍽️", "👕", "🏠", "🚗",
+                "🪙", "💰", "💵", "💳", "🤝", "🛒",
+                "✈️", "🍿", "🎮", "🐾", "🎁", "🛠️"
             ]
             
-            cols = st.columns(5)
+            cols = st.columns(6)
             for i, emoji_char in enumerate(emoji_options):
-                col = cols[i % 5]
+                col = cols[i % 6]
                 is_selected = emoji_char == st.session_state.edit_cat_emoji_val
                 btn_label = f"• {emoji_char} •" if is_selected else emoji_char
                 if col.button(btn_label, key=f"edit_emoji_{emoji_char}"):
@@ -1775,11 +1864,15 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
         else:
             st.markdown("### ➕ Yeni Kategori Oluştur")
             cat_name = st.text_input("Kategori Adı", placeholder="Örn: Aidat, Ulaşım, Kamp", key="new_cat_name")
-            cat_type = st.radio("Kategori Türü", ["Gider", "Gelir"], horizontal=True, key="new_cat_type")
+            cat_type = st.radio("Kategori Türü", ["Gider", "Gelir"], index=None, horizontal=True, key="new_cat_type")
             
-            if "last_cat_type" not in st.session_state or st.session_state.last_cat_type != cat_type:
-                st.session_state.last_cat_type = cat_type
-                st.session_state.new_cat_color = "#3B82F6" if cat_type == "Gelir" else "#EF4444"
+            if "new_cat_color" not in st.session_state:
+                st.session_state.new_cat_color = "#64748B"
+                
+            if cat_type is not None:
+                if "last_cat_type" not in st.session_state or st.session_state.last_cat_type != cat_type:
+                    st.session_state.last_cat_type = cat_type
+                    st.session_state.new_cat_color = "#3B82F6" if cat_type == "Gelir" else "#EF4444"
                 
             cat_color = st.color_picker("Rozet Rengi (Hex)", value=st.session_state.new_cat_color, key="new_cat_color_picker")
             st.session_state.new_cat_color = cat_color
@@ -1788,17 +1881,19 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
                 st.session_state.new_cat_emoji = "🧭"
                 
             st.markdown(f"**Rozet Simgesi:** <span style='font-size: 1.3rem; margin-left: 10px;'>{st.session_state.new_cat_emoji}</span>", unsafe_allow_html=True)
+            st.markdown("<div class='emoji-marker'></div>", unsafe_allow_html=True)
             
             emoji_options = [
-                "🧭", "🏃", "🗺️", "👟", "🏆", 
-                "🌲", "🏕️", "🪵", "🎒", "🩹", 
-                "🍕", "🥤", "🍽️", "👕", "🏠", 
-                "🪙", "💰", "💵", "💳", "🤝"
+                "🧭", "🏃", "🗺️", "👟", "🏆", "🎓",
+                "🌲", "🏕️", "🪵", "🎒", "🩹", "🏥",
+                "🍕", "🥤", "🍽️", "👕", "🏠", "🚗",
+                "🪙", "💰", "💵", "💳", "🤝", "🛒",
+                "✈️", "🍿", "🎮", "🐾", "🎁", "🛠️"
             ]
             
-            cols = st.columns(5)
+            cols = st.columns(6)
             for i, emoji_char in enumerate(emoji_options):
-                col = cols[i % 5]
+                col = cols[i % 6]
                 is_selected = emoji_char == st.session_state.new_cat_emoji
                 btn_label = f"• {emoji_char} •" if is_selected else emoji_char
                 if col.button(btn_label, key=f"new_emoji_{emoji_char}"):
@@ -1809,10 +1904,14 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
             if submitted:
                 if not cat_name.strip():
                     st.error("Kategori adı boş olamaz!")
+                elif cat_type is None:
+                    st.error("Kategori türü (Gider/Gelir) seçilmesi zorunludur!")
                 else:
                     add_category(cat_name.strip(), st.session_state.new_cat_emoji, cat_color, cat_type)
                     st.success(f"'{st.session_state.new_cat_emoji} {cat_name}' kategorisi başarıyla oluşturuldu!")
                     st.session_state.new_cat_emoji = "🧭"
+                    if "new_cat_type" in st.session_state:
+                        del st.session_state["new_cat_type"]
                     st.rerun()
                     
     with col_list:
