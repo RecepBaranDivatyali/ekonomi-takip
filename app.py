@@ -1173,13 +1173,25 @@ def inject_custom_css():
     }
     
     /* Hide the action button row by default */
-    div.element-container:has(span.debt-btn-row) {
+    div[data-testid="stHorizontalBlock"]:has(span.debt-btn-row) {
         display: none !important;
     }
     
     /* Show the action button row when the details container is open */
-    div.element-container:has(details.debt-details[open]) + div.element-container:has(span.debt-btn-row) {
-        display: block !important;
+    div.element-container:has(details.debt-details[open]) + div[data-testid="stHorizontalBlock"]:has(span.debt-btn-row) {
+        display: flex !important;
+        animation: slideDown 0.2s ease-out forwards !important;
+    }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-6px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
     
     @media (prefers-color-scheme: dark) {
