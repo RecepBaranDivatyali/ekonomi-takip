@@ -2619,13 +2619,9 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                         with st.expander(f"{cat_prefix}{d['name']}  —  {d['amount']:,.2f} TL  {type_lbl.split()[0]}", expanded=False):
                             st.markdown(f'<div id="debt-id-{d["id"]}"></div>', unsafe_allow_html=True)
                             # Card detail row inside expander
-                            if d['category_name']:
-                                cat_badge = f"<span style='background-color: {d['category_color']}15; color: {d['category_color']}; padding: 2px 8px; border-radius: 8px; font-weight: 600; font-size: 0.75rem; border: 1px solid {d['category_color']}30; display: inline-flex; align-items: center; gap: 4px;'><span style='font-size: 0.8rem;'>{d['category_emoji']}</span><span>{d['category_name']}</span></span>"
-                            else:
-                                cat_badge = ""
                             st.markdown(
                                 f"<div style='font-size: 0.82rem; color: #64748B; margin-bottom: 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px;'>"
-                                f"  <span>{type_lbl}{vade_lbl}</span>{cat_badge}{badge_html}"
+                                f"  <span>{type_lbl}{vade_lbl}</span>{badge_html}"
                                 f"</div>",
                                 unsafe_allow_html=True
                             )
@@ -2683,13 +2679,9 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                             
                         with st.expander(f"✅ {cat_prefix}{d['name']}  —  {d['amount']:,.2f} TL  ({type_lbl})", expanded=False):
                             st.markdown(f'<div id="debt-id-{d["id"]}"></div>', unsafe_allow_html=True)
-                            if d['category_name']:
-                                cat_badge = f"<span style='background-color: {d['category_color']}15; color: {d['category_color']}; padding: 2px 8px; border-radius: 8px; font-weight: 600; font-size: 0.75rem; border: 1px solid {d['category_color']}30; display: inline-flex; align-items: center; gap: 4px;'><span style='font-size: 0.8rem;'>{d['category_emoji']}</span><span>{d['category_name']}</span></span>"
-                            else:
-                                cat_badge = ""
                             st.markdown(
                                 f"<div style='font-size: 0.82rem; color: #64748B; margin-bottom: 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px;'>"
-                                f"  <span>✅ Ödendi ({type_lbl})</span>{cat_badge}"
+                                f"  <span>✅ Ödendi ({type_lbl})</span>"
                                 f"</div>",
                                 unsafe_allow_html=True
                             )
