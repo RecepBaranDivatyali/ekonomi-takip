@@ -2144,7 +2144,16 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
             # Custom styled list with Delete and Edit Actions (Accordion details card styling)
             for tx in filtered_txs:
                 sign = "+" if tx['type'] == 'Gelir' else "-"
-                tx_desc_text = tx['description'] if tx['description'] else tx['category_name']
+                raw_desc = tx['description'] if tx['description'] else tx['category_name']
+                clean_desc = raw_desc.replace("~", "")
+                
+                # If category exists, description can take up 100% minus category badge (240px)
+                # If category doesn't exist, description can take up 100% minus right side padding (130px)
+                max_width_val = "calc(100% - 240px)" if tx['category_name'] else "calc(100% - 130px)"
+                
+                # Determine font size: if description is long, make it smaller
+                desc_font_size = "0.76rem" if len(clean_desc) > 20 else "0.85rem"
+                
                 amt_color = "#10B981" if tx['type'] == 'Gelir' else "#EF4444"
                 amt_formatted = f"{sign} {tx['amount']:,.2f} TL"
                 
@@ -2169,6 +2178,18 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
                     gap: 4px !important;
                     white-space: nowrap !important;
                     margin-right: 6px !important;
+                }}
+                div[data-testid="stExpander"]:has(#tx-id-{tx['id']}) > details > summary del {{
+                    text-decoration: none !important;
+                    display: inline-block !important;
+                    max-width: {max_width_val} !important;
+                    white-space: nowrap !important;
+                    overflow: hidden !important;
+                    text-overflow: ellipsis !important;
+                    vertical-align: middle !important;
+                    font-size: {desc_font_size} !important;
+                    font-weight: 600 !important;
+                    color: inherit !important;
                 }}
                 div[data-testid="stExpander"]:has(#tx-id-{tx['id']}) > details > summary strong {{
                     color: {amt_color} !important;
@@ -2199,7 +2220,7 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
                 else:
                     cat_prefix = ""
                     
-                exp_title = f"{cat_prefix}{tx_desc_text} **{amt_formatted}** `{tx['date']}`"
+                exp_title = f"{cat_prefix}~~{clean_desc}~~ **{amt_formatted}** `{tx['date']}`"
                 with st.expander(exp_title, expanded=False):
                     st.markdown(f'<div id="tx-id-{tx["id"]}"></div>', unsafe_allow_html=True)
                     tx_type_lbl = "🟢 Gelir" if tx['type'] == 'Gelir' else "🔴 Gider"
