@@ -1075,16 +1075,16 @@ def inject_custom_css():
     }
     
     /* Target only action buttons inside transaction rows, category lists, or debt actions */
-    div[data-testid="stHorizontalBlock"]:has(.tx-card-marker) > div[data-testid="stColumn"]:has(.tx-actions-marker) div[data-testid="stColumn"] button,
-    div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) > div[data-testid="stColumn"]:has(.cat-actions-marker) button,
-    div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) > div[data-testid="stColumn"]:has(.debt-actions-marker) div[data-testid="stColumn"] button {
+    div[data-testid="stHorizontalBlock"]:has(.tx-card-marker) > div[data-testid="stColumn"]:has(.tx-actions-marker) div[data-testid="stButton"] > button,
+    div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) > div[data-testid="stColumn"]:has(.cat-actions-marker) div[data-testid="stButton"] > button,
+    div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] > div[data-testid="element-container"] span.debt-btn-row) div[data-testid="stButton"] > button {
         padding: 2px 4px !important;
-        min-width: 32px !important;
-        min-height: 32px !important;
-        width: 32px !important;
-        height: 32px !important;
+        min-width: 36px !important;
+        min-height: 36px !important;
+        width: 36px !important;
+        height: 36px !important;
         border-radius: 50% !important; /* Circle buttons */
-        font-size: 0.85rem !important;
+        font-size: 0.9rem !important;
         line-height: 1 !important;
         display: inline-flex !important;
         align-items: center !important;
@@ -1097,24 +1097,44 @@ def inject_custom_css():
         transition: all 0.2s ease-in-out !important;
     }
     
-    div[data-testid="stHorizontalBlock"]:has(.tx-card-marker) > div[data-testid="stColumn"]:has(.tx-actions-marker) div[data-testid="stColumn"] button:hover,
-    div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) > div[data-testid="stColumn"]:has(.cat-actions-marker) button:hover,
-    div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) > div[data-testid="stColumn"]:has(.debt-actions-marker) div[data-testid="stColumn"] button:hover {
+    div[data-testid="stHorizontalBlock"]:has(.tx-card-marker) > div[data-testid="stColumn"]:has(.tx-actions-marker) div[data-testid="stButton"] > button:hover,
+    div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) > div[data-testid="stColumn"]:has(.cat-actions-marker) div[data-testid="stButton"] > button:hover,
+    div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] > div[data-testid="element-container"] span.debt-btn-row) div[data-testid="stButton"] > button:hover {
         background-color: #F1F5F9 !important;
         border-color: #CBD5E1 !important;
         transform: scale(1.1) !important;
     }
     
+    /* Debt action button row: precisely target the DIRECT parent stHorizontalBlock using deep-path :has() */
+    /* This prevents matching ancestor containers that also contain .debt-btn-row deep inside */
+    div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] > div[data-testid="element-container"] span.debt-btn-row) {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 8px !important;
+        width: auto !important;
+        margin-bottom: 10px !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] > div[data-testid="element-container"] span.debt-btn-row) > div[data-testid="stColumn"] {
+        width: 44px !important;
+        min-width: 44px !important;
+        max-width: 44px !important;
+        flex-grow: 0 !important;
+        flex-shrink: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
     @media (prefers-color-scheme: dark) {
-        div[data-testid="stHorizontalBlock"]:has(.tx-card-marker) > div[data-testid="stColumn"]:has(.tx-actions-marker) div[data-testid="stColumn"] button,
-        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) > div[data-testid="stColumn"]:has(.cat-actions-marker) button,
-        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) > div[data-testid="stColumn"]:has(.debt-actions-marker) div[data-testid="stColumn"] button {
+        div[data-testid="stHorizontalBlock"]:has(.tx-card-marker) > div[data-testid="stColumn"]:has(.tx-actions-marker) div[data-testid="stButton"] > button,
+        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) > div[data-testid="stColumn"]:has(.cat-actions-marker) div[data-testid="stButton"] > button,
+        div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] > div[data-testid="element-container"] span.debt-btn-row) div[data-testid="stButton"] > button {
             background-color: #1E293B !important;
             border-color: #334155 !important;
         }
-        div[data-testid="stHorizontalBlock"]:has(.tx-card-marker) > div[data-testid="stColumn"]:has(.tx-actions-marker) div[data-testid="stColumn"] button:hover,
-        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) > div[data-testid="stColumn"]:has(.cat-actions-marker) button:hover,
-        div[data-testid="stHorizontalBlock"]:has(.debt-row-marker) > div[data-testid="stColumn"]:has(.debt-actions-marker) div[data-testid="stColumn"] button:hover {
+        div[data-testid="stHorizontalBlock"]:has(.tx-card-marker) > div[data-testid="stColumn"]:has(.tx-actions-marker) div[data-testid="stButton"] > button:hover,
+        div[data-testid="stHorizontalBlock"]:has(.cat-row-marker) > div[data-testid="stColumn"]:has(.cat-actions-marker) div[data-testid="stButton"] > button:hover,
+        div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] > div[data-testid="element-container"] span.debt-btn-row) div[data-testid="stButton"] > button:hover {
             background-color: #334155 !important;
             border-color: #475569 !important;
         }
@@ -1380,40 +1400,6 @@ def inject_custom_css():
             flex-grow: 1 !important;
             flex-shrink: 1 !important;
             min-width: 0 !important;
-        }
-
-        /* Debt tracking list row layout on mobile: Outer columns stacked vertically */
-        div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] .debt-row-marker):not(:has(div[data-testid="stHorizontalBlock"]:has(.debt-row-marker))) {
-            flex-direction: column !important;
-            align-items: stretch !important;
-            gap: 8px !important;
-            max-width: 100% !important;
-            width: 100% !important;
-        }
-        div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] .debt-row-marker):not(:has(div[data-testid="stHorizontalBlock"]:has(.debt-row-marker))) > div[data-testid="stColumn"] {
-            width: 100% !important;
-            flex-grow: 1 !important;
-            flex-shrink: 1 !important;
-            margin: 0 !important;
-        }
-
-        /* Debt tracking list inner columns: buttons aligned side-by-side on mobile */
-        div[data-testid="stColumn"]:has(.debt-actions-marker) div[data-testid="stHorizontalBlock"] {
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            justify-content: flex-start !important;
-            align-items: center !important;
-            gap: 12px !important;
-            width: 100% !important;
-            margin-top: 6px !important;
-        }
-        div[data-testid="stColumn"]:has(.debt-actions-marker) div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
-            width: auto !important;
-            min-width: 38px !important;
-            max-width: 38px !important;
-            flex-grow: 0 !important;
-            flex-shrink: 0 !important;
-            margin: 0 !important;
         }
 
         /* Debt summary row layout on mobile: keep side-by-side */
@@ -2438,51 +2424,46 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                     st.success("Bekleyen borcunuz bulunmuyor! Her şey dengede.")
                 else:
                     for d in pending_debts:
-                        col_info, col_actions = st.columns([6, 2])
-                        with col_info:
-                            st.markdown('<span class="debt-row-marker"></span>', unsafe_allow_html=True)
-                            color = "#EF4444" if d['type'] == 'Verilecek' else "#10B981"
-                            type_lbl = "🔴 Verilecek" if d['type'] == 'Verilecek' else "🟢 Alınacak"
-                            vade_lbl = f" | 📅 Vade: {d['due_date']}" if d['due_date'] else " | 📅 Vade: Belirsiz"
-                            
-                            badge_html = get_debt_badge_html(d['due_date'])
-                            
-                            if d['category_name']:
-                                cat_badge = f"<span style='background-color: {d['category_color']}15; color: {d['category_color']}; padding: 2px 8px; border-radius: 8px; font-weight: 600; font-size: 0.75rem; border: 1px solid {d['category_color']}30; display: inline-flex; align-items: center; gap: 4px; margin-left: 8px;'><span style='font-size: 0.8rem;'>{d['category_emoji']}</span><span>{d['category_name']}</span></span>"
-                            else:
-                                cat_badge = ""
-                            
-                            st.markdown(
-                                f"<div class='debt-info-card' style='padding: 12px; border: 1px solid #E2E8F0; border-radius: 12px; margin-bottom: 10px;'>"
-                                f"<div style='display: flex; justify-content: space-between; align-items: center;'>"
-                                f"<div><strong>{d['name']}</strong>{badge_html}</div>"
-                                f"<span style='color: {color}; font-weight: 700;'>{d['amount']:,.2f} TL</span>"
-                                f"</div>"
-                                f"<div style='font-size: 0.8rem; color: #64748B; margin-top: 4px; display: flex; align-items: center; flex-wrap: wrap;'>"
-                                f"<span>{type_lbl}{vade_lbl}</span>{cat_badge}"
-                                f"</div>"
-                                f"</div>",
-                                unsafe_allow_html=True
-                            )
-                        with col_actions:
-                            st.markdown('<span class="debt-actions-marker"></span>', unsafe_allow_html=True)
-                            c_paid, c_edit, c_del = st.columns(3)
-                            with c_paid:
-                                if st.button("✔️", key=f"pay_debt_{d['id']}", help="Ödendi olarak işaretle"):
-                                    if not d['category_id']:
-                                        st.toast("⚠️ Ödeme alabilmek için borca önce bir kategori seçmelisiniz! (✏️ Düzenle butonunu kullanın)", icon="⚠️")
-                                    else:
-                                        update_debt_status(d['id'], "Ödendi")
-                                        st.toast("Borç ödendi olarak güncellendi.", icon="✅")
-                                        st.rerun()
-                            with c_edit:
-                                if st.button("✏️", key=f"edit_debt_btn_{d['id']}", help="Borcu Düzenle"):
-                                    st.session_state.edit_debt_id = d['id']
+                        # Full-width card
+                        color = "#EF4444" if d['type'] == 'Verilecek' else "#10B981"
+                        type_lbl = "🔴 Verilecek" if d['type'] == 'Verilecek' else "🟢 Alınacak"
+                        vade_lbl = f" | 📅 Vade: {d['due_date']}" if d['due_date'] else " | 📅 Vade: Belirsiz"
+                        badge_html = get_debt_badge_html(d['due_date'])
+                        if d['category_name']:
+                            cat_badge = f"<span style='background-color: {d['category_color']}15; color: {d['category_color']}; padding: 2px 8px; border-radius: 8px; font-weight: 600; font-size: 0.75rem; border: 1px solid {d['category_color']}30; display: inline-flex; align-items: center; gap: 4px; margin-left: 8px;'><span style='font-size: 0.8rem;'>{d['category_emoji']}</span><span>{d['category_name']}</span></span>"
+                        else:
+                            cat_badge = ""
+                        st.markdown(
+                            f"<div class='debt-info-card' style='padding: 12px; border: 1px solid #E2E8F0; border-radius: 12px; margin-bottom: 6px;'>"
+                            f"<div style='display: flex; justify-content: space-between; align-items: center; gap: 8px;'>"
+                            f"<div style='min-width: 0; flex-shrink: 1;'><strong>{d['name']}</strong>{badge_html}</div>"
+                            f"<span style='color: {color}; font-weight: 700; white-space: nowrap; flex-shrink: 0;'>{d['amount']:,.2f} TL</span>"
+                            f"</div>"
+                            f"<div style='font-size: 0.8rem; color: #64748B; margin-top: 4px; display: flex; align-items: center; flex-wrap: wrap;'>"
+                            f"<span>{type_lbl}{vade_lbl}</span>{cat_badge}"
+                            f"</div>"
+                            f"</div>",
+                            unsafe_allow_html=True
+                        )
+                        # Action buttons in compact horizontal row below the card
+                        c_paid, c_edit, c_del = st.columns(3)
+                        with c_paid:
+                            st.markdown('<span class="debt-btn-row"></span>', unsafe_allow_html=True)
+                            if st.button("✔️", key=f"pay_debt_{d['id']}", help="Ödendi olarak işaretle"):
+                                if not d['category_id']:
+                                    st.toast("⚠️ Ödeme alabilmek için borca önce bir kategori seçmelisiniz! (✏️ Düzenle butonunu kullanın)", icon="⚠️")
+                                else:
+                                    update_debt_status(d['id'], "Ödendi")
+                                    st.toast("Borç ödendi olarak güncellendi.", icon="✅")
                                     st.rerun()
-                            with c_del:
-                                if st.button("🗑️", key=f"del_debt_{d['id']}", help="Borcu Sil"):
-                                    st.session_state.confirm_delete_debt_id = d['id']
-                                    st.rerun()
+                        with c_edit:
+                            if st.button("✏️", key=f"edit_debt_btn_{d['id']}", help="Borcu Düzenle"):
+                                st.session_state.edit_debt_id = d['id']
+                                st.rerun()
+                        with c_del:
+                            if st.button("🗑️", key=f"del_debt_{d['id']}", help="Borcu Sil"):
+                                st.session_state.confirm_delete_debt_id = d['id']
+                                st.rerun()
                                     
             with tab_paid:
                 paid_debts = [d for d in all_debts if d['status'] == 'Ödendi']
@@ -2490,45 +2471,41 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
                     st.info("Ödenmiş borç geçmişi bulunmuyor.")
                 else:
                     for d in paid_debts:
-                        col_info, col_actions = st.columns([6, 2])
-                        with col_info:
-                            st.markdown('<span class="debt-row-marker"></span>', unsafe_allow_html=True)
-                            color = "#94A3B8"
-                            type_lbl = "Verilecek" if d['type'] == 'Verilecek' else "Alınacak"
-                            
-                            if d['category_name']:
-                                cat_badge = f"<span style='background-color: {d['category_color']}15; color: {d['category_color']}; padding: 2px 8px; border-radius: 8px; font-weight: 600; font-size: 0.75rem; border: 1px solid {d['category_color']}30; display: inline-flex; align-items: center; gap: 4px; margin-left: 8px;'><span style='font-size: 0.8rem;'>{d['category_emoji']}</span><span>{d['category_name']}</span></span>"
-                            else:
-                                cat_badge = ""
-                            
-                            st.markdown(
-                                f"<div class='debt-info-card' style='padding: 12px; border: 1px solid #E2E8F0; border-radius: 12px; margin-bottom: 10px; opacity: 0.75; background: #F8FAFC;'>"
-                                f"<div style='display: flex; justify-content: space-between; align-items: center;'>"
-                                f"<del><strong>{d['name']}</strong></del>"
-                                f"<span style='color: {color}; font-weight: 700; text-decoration: line-through;'>{d['amount']:,.2f} TL</span>"
-                                f"</div>"
-                                f"<div style='font-size: 0.8rem; color: #64748B; margin-top: 4px; display: flex; align-items: center; flex-wrap: wrap;'>"
-                                f"<span>✅ Ödendi ({type_lbl})</span>{cat_badge}"
-                                f"</div>"
-                                f"</div>",
-                                unsafe_allow_html=True
-                            )
-                        with col_actions:
-                            st.markdown('<span class="debt-actions-marker"></span>', unsafe_allow_html=True)
-                            c_unpay, c_edit, c_del = st.columns(3)
-                            with c_unpay:
-                                if st.button("⏪", key=f"unpay_debt_{d['id']}", help="Geri Al (Bekliyor yap)"):
-                                    update_debt_status(d['id'], "Bekliyor")
-                                    st.toast("Borç tekrar bekliyor statüsüne alındı.", icon="⏪")
-                                    st.rerun()
-                            with c_edit:
-                                if st.button("✏️", key=f"edit_paid_debt_btn_{d['id']}", help="Borcu Düzenle"):
-                                    st.session_state.edit_debt_id = d['id']
-                                    st.rerun()
-                            with c_del:
-                                if st.button("🗑️", key=f"del_paid_debt_{d['id']}", help="Kayıttan Sil"):
-                                    st.session_state.confirm_delete_debt_id = d['id']
-                                    st.rerun()
+                        # Full-width card
+                        color = "#94A3B8"
+                        type_lbl = "Verilecek" if d['type'] == 'Verilecek' else "Alınacak"
+                        if d['category_name']:
+                            cat_badge = f"<span style='background-color: {d['category_color']}15; color: {d['category_color']}; padding: 2px 8px; border-radius: 8px; font-weight: 600; font-size: 0.75rem; border: 1px solid {d['category_color']}30; display: inline-flex; align-items: center; gap: 4px; margin-left: 8px;'><span style='font-size: 0.8rem;'>{d['category_emoji']}</span><span>{d['category_name']}</span></span>"
+                        else:
+                            cat_badge = ""
+                        st.markdown(
+                            f"<div class='debt-info-card' style='padding: 12px; border: 1px solid #E2E8F0; border-radius: 12px; margin-bottom: 6px; opacity: 0.75; background: #F8FAFC;'>"
+                            f"<div style='display: flex; justify-content: space-between; align-items: center; gap: 8px;'>"
+                            f"<del style='min-width: 0; flex-shrink: 1;'><strong>{d['name']}</strong></del>"
+                            f"<span style='color: {color}; font-weight: 700; text-decoration: line-through; white-space: nowrap; flex-shrink: 0;'>{d['amount']:,.2f} TL</span>"
+                            f"</div>"
+                            f"<div style='font-size: 0.8rem; color: #64748B; margin-top: 4px; display: flex; align-items: center; flex-wrap: wrap;'>"
+                            f"<span>✅ Ödendi ({type_lbl})</span>{cat_badge}"
+                            f"</div>"
+                            f"</div>",
+                            unsafe_allow_html=True
+                        )
+                        # Action buttons in compact horizontal row below the card
+                        c_unpay, c_edit, c_del = st.columns(3)
+                        with c_unpay:
+                            st.markdown('<span class="debt-btn-row"></span>', unsafe_allow_html=True)
+                            if st.button("⏪", key=f"unpay_debt_{d['id']}", help="Geri Al (Bekliyor yap)"):
+                                update_debt_status(d['id'], "Bekliyor")
+                                st.toast("Borç tekrar bekliyor statüsüne alındı.", icon="⏪")
+                                st.rerun()
+                        with c_edit:
+                            if st.button("✏️", key=f"edit_paid_debt_btn_{d['id']}", help="Borcu Düzenle"):
+                                st.session_state.edit_debt_id = d['id']
+                                st.rerun()
+                        with c_del:
+                            if st.button("🗑️", key=f"del_paid_debt_{d['id']}", help="Kayıttan Sil"):
+                                st.session_state.confirm_delete_debt_id = d['id']
+                                st.rerun()
 
 
 elif menu_selection == "⚙️ Faiz & Geçmişi Düzenle":
