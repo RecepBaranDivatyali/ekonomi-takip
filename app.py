@@ -2755,27 +2755,38 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
                     st.session_state.confirm_delete_cat_id = None
 
             for c in cats:
-                col_badge, col_type_lbl, col_edit, col_del = st.columns([6, 2, 1, 1])
+                lbl_color = "#10B981" if c['type'] == "Gelir" else "#EF4444"
+                type_label = "🟢 Gelir" if c['type'] == 'Gelir' else "🔴 Gider"
                 
-                with col_badge:
-                    st.markdown('<span class="cat-row-marker"></span>', unsafe_allow_html=True)
-                    st.markdown(get_category_badge_html(c['emoji'], c['name'], c['color']), unsafe_allow_html=True)
+                # Dynamic style block to set left border color for the category expander card
+                st.markdown(f"""
+                <style>
+                div[data-testid="stExpander"]:has(#cat-id-{c['id']}) {{
+                    border-left: 5px solid {c['color']} !important;
+                    background-color: {c['color']}05 !important;
+                }}
+                </style>
+                """, unsafe_allow_html=True)
                 
-                with col_type_lbl:
-                    lbl_color = "#10B981" if c['type'] == "Gelir" else "#EF4444"
-                    st.markdown(f"<div style='color: {lbl_color}; font-weight: 700; padding-top: 6px;'>{c['type']}</div>", unsafe_allow_html=True)
+                exp_title = f"{c['emoji']} {c['name']} · **{c['type']}**"
+                with st.expander(exp_title, expanded=False):
+                    st.markdown(f'<div id="cat-id-{c["id"]}"></div>', unsafe_allow_html=True)
+                    st.markdown(
+                        f"<div style='font-size: 0.82rem; color: #64748B; margin-bottom: 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px;'>"
+                        f"  <span>Tür: <span style='color: {lbl_color}; font-weight: 700;'>{c['type']}</span> | Renk Kodu: <code>{c['color']}</code></span>"
+                        f"</div>",
+                        unsafe_allow_html=True
+                    )
                     
-                with col_edit:
-                    st.markdown('<span class="cat-actions-marker"></span>', unsafe_allow_html=True)
-                    if st.button("✏️", key=f"edit_cat_btn_{c['id']}", help="Kategoriyi Düzenle"):
-                        st.session_state.edit_cat_id = c['id']
-                        st.rerun()
-                        
-                with col_del:
-                    st.markdown('<span class="cat-actions-marker"></span>', unsafe_allow_html=True)
-                    if st.button("🗑️", key=f"del_cat_{c['id']}", help="Bu kategori silinirse bağlı TÜM işlemler de silinecektir!"):
-                        st.session_state.confirm_delete_cat_id = c['id']
-                        st.rerun()
+                    c_edit, c_del = st.columns(2)
+                    with c_edit:
+                        if st.button("✏️ Düzenle", key=f"edit_cat_btn_{c['id']}", use_container_width=True):
+                            st.session_state.edit_cat_id = c['id']
+                            st.rerun()
+                    with c_del:
+                        if st.button("🗑️ Sil", key=f"del_cat_{c['id']}", use_container_width=True):
+                            st.session_state.confirm_delete_cat_id = c['id']
+                            st.rerun()
 
 
 elif menu_selection == "🤝 Borç Takip Sistemi":
