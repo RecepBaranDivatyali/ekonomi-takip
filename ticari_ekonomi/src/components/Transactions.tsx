@@ -429,7 +429,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
         <div className="card muted" style={{ textAlign: 'left', marginBottom: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
             <div className="card-title" style={{ margin: 0 }}>
-              {isDebtMode ? `Yeni ${debtType === 'Alınacak' ? 'Alacak' : 'Borç'} Ekle` : `Yeni ${txType} Ekle`}
+              {isDebtMode ? `Yeni ${debtType === 'Alınacak' ? 'Gelir' : 'Gider'} Kaydı Ekle` : `Yeni ${txType} Ekle`}
             </div>
             <button
               type="button"
@@ -462,14 +462,14 @@ export const Transactions: React.FC<TransactionsProps> = ({
                 className={`tab-switch-btn ${debtType === 'Alınacak' ? 'active gelir' : ''}`}
                 onClick={() => setDebtType('Alınacak')}
               >
-                Alacak (Bana Ödenecek)
+                Gelir (Bana Ödenecek)
               </button>
               <button
                 type="button"
                 className={`tab-switch-btn ${debtType === 'Verilecek' ? 'active gider' : ''}`}
                 onClick={() => setDebtType('Verilecek')}
               >
-                Borç (Ben Ödeyeceğim)
+                Gider (Ben Ödeyeceğim)
               </button>
             </div>
           ) : (
