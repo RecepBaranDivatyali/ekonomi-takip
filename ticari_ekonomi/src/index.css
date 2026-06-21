@@ -779,11 +779,10 @@ h1, h2, h3, h4, h5, h6 {
 /* Wallet Pill/Selector on Dashboard */
 .wallet-scroll {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  overflow-x: auto;
   padding-bottom: 8px;
   margin-bottom: 18px;
-  scrollbar-width: none; /* Hide standard Firefox scrollbar */
 }
 
 .wallet-scroll::-webkit-scrollbar {

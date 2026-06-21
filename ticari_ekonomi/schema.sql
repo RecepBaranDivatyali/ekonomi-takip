@@ -126,3 +126,23 @@ with check (auth.uid() = user_id);
 
 -- Add tag_id to transactions table
 alter table public.transactions add column if not exists tag_id uuid references public.tags(id) on delete set null;
+
+-- 7. USER STOCKS TABLE (Borsa Hisse Senedi Portföyü)
+create table if not exists public.user_stocks (
+    id uuid default uuid_generate_v4() primary key,
+    user_id uuid references auth.users(id) on delete cascade not null,
+    wallet_id uuid references public.wallets(id) on delete cascade not null,
+    symbol text not null,
+    shares_count numeric not null default 0 check (shares_count >= 0),
+    average_cost numeric not null default 0 check (average_cost >= 0),
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    unique(wallet_id, symbol)
+);
+
+-- Enable RLS for user_stocks
+alter table public.user_stocks enable row level security;
+
+create policy "Users can perform all actions on their own stocks"
+on public.user_stocks for all
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);

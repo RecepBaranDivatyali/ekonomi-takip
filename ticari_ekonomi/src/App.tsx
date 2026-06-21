@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from './supabaseClient';
 import { Auth } from './components/Auth';
 import { Navbar } from './components/Navbar';
 import { Dashboard } from './components/Dashboard';
 import { Transactions } from './components/Transactions';
 import { Wallets } from './components/Wallets';
-import { Debts } from './components/Debts';
 import { Categories } from './components/Categories';
 import { Tags } from './components/Tags';
+import { Borsa } from './components/Borsa';
 import { fetchExchangeRates, DEFAULT_RATES } from './services/currencyService';
 import type { ExchangeRates } from './services/currencyService';
 import { FiAlertCircle } from 'react-icons/fi';
@@ -23,6 +23,7 @@ interface Wallet {
   maturity_days: number;
   last_interest_date: string;
   created_at?: string;
+  cash_balance?: number;
 }
 
 interface Category {
@@ -39,6 +40,15 @@ interface Tag {
   name: string;
   emoji: string;
   color: string;
+}
+
+interface UserStock {
+  id: string;
+  user_id: string;
+  wallet_id: string;
+  symbol: string;
+  shares_count: number;
+  average_cost: number;
 }
 
 interface Transaction {
@@ -76,6 +86,35 @@ function App() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [debts, setDebts] = useState<Debt[]>([]);
+  const [userStocks, setUserStocks] = useState<UserStock[]>([]);
+
+  // Simulated live stock prices
+  const [stockPrices, setStockPrices] = useState<{ [key: string]: number }>({
+    THY: 312.50,
+    BIMAS: 418.20,
+    EREGL: 51.90,
+    ASELS: 63.85,
+    TUPRS: 164.50,
+    KCHOL: 208.70,
+    YKBNK: 28.10,
+    SAHOL: 84.60,
+    SASA: 38.30
+  });
+
+  // Stock price simulator (runs every 5 seconds with small fluctuations)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStockPrices(prev => {
+        const next = { ...prev };
+        Object.keys(next).forEach(symbol => {
+          const changePercent = (Math.random() - 0.5) * 0.006; // max +/- 0.3% change
+          next[symbol] = Number((next[symbol] * (1 + changePercent)).toFixed(2));
+        });
+        return next;
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Filter selection
   const [selectedWalletId, setSelectedWalletId] = useState<string>('all');
@@ -268,6 +307,14 @@ function App() {
       if (dError) throw dError;
       setDebts(debtsData || []);
 
+      // 6. Fetch User Stocks
+      const { data: stocksData, error: sError } = await supabase
+        .from('user_stocks')
+        .select('*')
+        .order('symbol', { ascending: true });
+      if (sError) throw sError;
+      setUserStocks(stocksData || []);
+
       // Check interest if not checked in this session yet
       if (session?.user?.id && !hasCheckedInterest && walletsData && categoriesData) {
         setHasCheckedInterest(true);
@@ -305,6 +352,7 @@ function App() {
       setTags([]);
       setTransactions([]);
       setDebts([]);
+      setUserStocks([]);
       setHasCheckedInterest(false);
     }
   }, [session, fetchUserData]);
@@ -369,115 +417,136 @@ function App() {
     );
   }
 
+  // Dynamic wallets with simulated stock portfolio values
+  const computedWallets = useMemo(() => {
+    return wallets.map(w => {
+      if (w.type === 'Borsa_TRY' || w.type === 'Borsa_USD') {
+        const stocks = userStocks.filter(s => s.wallet_id === w.id);
+        const stockVal = stocks.reduce((sum, s) => {
+          const price = stockPrices[s.symbol] || Number(s.average_cost) || 0;
+          return sum + Number(s.shares_count) * price;
+        }, 0);
+        return {
+          ...w,
+          cash_balance: Number(w.balance),
+          balance: Number((Number(w.balance) + stockVal).toFixed(2))
+        } as Wallet;
+      }
+      return w;
+    });
+  }, [wallets, userStocks, stockPrices]);
+
   return (
     <div className="app-frame">
-      <div className="app-content">
-        {ratesError && (
-          <div
-            style={{
-              background: 'rgba(239, 68, 68, 0.12)',
-              borderColor: 'rgba(239, 68, 68, 0.25)',
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              color: '#fca5a5',
-              padding: '10px 14px',
-              borderRadius: '8px',
-              fontSize: '0.78rem',
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              textAlign: 'left',
-            }}
-          >
-            <FiAlertCircle style={{ flexShrink: 0, fontSize: '1.1rem', color: '#f87171' }} />
-            <span>
-              Güncel döviz kurları çekilemedi. Son çevrimdışı kurlar veya sabit değerler kullanılıyor.
-            </span>
-          </div>
-        )}
-
-        {dataLoading && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '12px',
-              right: '12px',
-              width: '16px',
-              height: '16px',
-              borderRadius: '50%',
-              border: '2px solid rgba(255, 255, 255, 0.1)',
-              borderTopColor: '#3b82f6',
-              animation: 'spin 1s linear infinite',
-              zIndex: 1000,
-            }}
-          />
-        )}
-
-        {/* Tab Routing */}
-        {activeTab === 'dashboard' && (
-          <Dashboard
-            wallets={wallets}
-            categories={categories}
-            transactions={transactions}
-            selectedWalletId={selectedWalletId}
-            setSelectedWalletId={setSelectedWalletId}
-            onSignOut={handleSignOut}
-            rates={rates}
-            tags={tags}
-            userEmail={session?.user?.email}
-          />
-        )}
-
-        {activeTab === 'transactions' && (
-          <Transactions
-            wallets={wallets}
-            categories={categories}
-            tags={tags}
-            transactions={transactions}
-            onRefreshData={handleRefresh}
-            userId={session.user.id}
-          />
-        )}
-
-        {activeTab === 'wallets' && (
-          <Wallets
-            wallets={wallets}
-            onRefreshData={handleRefresh}
-            userId={session.user.id}
-            rates={rates}
-          />
-        )}
-
-        {activeTab === 'debts' && (
-          <Debts
-            wallets={wallets}
-            categories={categories}
-            debts={debts}
-            onRefreshData={handleRefresh}
-            userId={session.user.id}
-          />
-        )}
-
-        {activeTab === 'categories' && (
-          <Categories
-            categories={categories}
-            onRefreshData={handleRefresh}
-            userId={session.user.id}
-          />
-        )}
-
-        {activeTab === 'tags' && (
-          <Tags
-            tags={tags}
-            transactions={transactions}
-            categories={categories}
-            wallets={wallets}
-            onRefreshData={handleRefresh}
-            userId={session.user.id}
-          />
-        )}
-      </div>
+            <div className="app-content">
+              {ratesError && (
+                <div
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.12)',
+                    borderColor: 'rgba(239, 68, 68, 0.25)',
+                    borderWidth: '1px',
+                    borderStyle: 'solid',
+                    color: '#fca5a5',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    fontSize: '0.78rem',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    textAlign: 'left',
+                  }}
+                >
+                  <FiAlertCircle style={{ flexShrink: 0, fontSize: '1.1rem', color: '#f87171' }} />
+                  <span>
+                    Güncel döviz kurları çekilemedi. Son çevrimdışı kurlar veya sabit değerler kullanılıyor.
+                  </span>
+                </div>
+              )}
+      
+              {dataLoading && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '12px',
+                    right: '12px',
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '50%',
+                    border: '2px solid rgba(255, 255, 255, 0.1)',
+                    borderTopColor: '#3b82f6',
+                    animation: 'spin 1s linear infinite',
+                    zIndex: 1000,
+                  }}
+                />
+              )}
+      
+              {/* Tab Routing */}
+              {activeTab === 'dashboard' && (
+                <Dashboard
+                  wallets={computedWallets}
+                  categories={categories}
+                  transactions={transactions}
+                  selectedWalletId={selectedWalletId}
+                  setSelectedWalletId={setSelectedWalletId}
+                  onSignOut={handleSignOut}
+                  rates={rates}
+                  tags={tags}
+                  userEmail={session?.user?.email}
+                />
+              )}
+      
+              {activeTab === 'transactions' && (
+                <Transactions
+                  wallets={computedWallets}
+                  categories={categories}
+                  tags={tags}
+                  transactions={transactions}
+                  debts={debts}
+                  onRefreshData={handleRefresh}
+                  userId={session.user.id}
+                />
+              )}
+      
+              {activeTab === 'wallets' && (
+                <Wallets
+                  wallets={computedWallets}
+                  onRefreshData={handleRefresh}
+                  userId={session.user.id}
+                  rates={rates}
+                />
+              )}
+      
+              {activeTab === 'borsa' && (
+                <Borsa
+                  wallets={computedWallets}
+                  userStocks={userStocks}
+                  stockPrices={stockPrices}
+                  transactions={transactions}
+                  onRefreshData={handleRefresh}
+                  userId={session.user.id}
+                />
+              )}
+      
+              {activeTab === 'categories' && (
+                <Categories
+                  categories={categories}
+                  onRefreshData={handleRefresh}
+                  userId={session.user.id}
+                />
+              )}
+      
+              {activeTab === 'tags' && (
+                <Tags
+                  tags={tags}
+                  transactions={transactions}
+                  categories={categories}
+                  wallets={computedWallets}
+                  onRefreshData={handleRefresh}
+                  userId={session.user.id}
+                />
+              )}
+            </div>
 
       {/* Sticky Tab Navigation Footer */}
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />

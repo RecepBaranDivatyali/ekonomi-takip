@@ -14,6 +14,8 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
+  const [fullName, setFullName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,9 +25,24 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
 
     try {
       if (isSignUp) {
+        if (!fullName.trim()) {
+          setErrorMsg('Lütfen adınızı ve soyadınızı girin.');
+          setLoading(false);
+          return;
+        }
+        if (password !== confirmPassword) {
+          setErrorMsg('Şifreler uyuşmuyor. Lütfen şifrenizi tekrar kontrol edin.');
+          setLoading(false);
+          return;
+        }
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              full_name: fullName.trim(),
+            }
+          }
         });
 
         if (error) throw error;
@@ -109,6 +126,35 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
           </div>
         )}
 
+        {isSignUp && (
+          <div className="form-group">
+            <label className="form-label">Ad Soyad</label>
+            <div style={{ position: 'relative' }}>
+              <span
+                style={{
+                  position: 'absolute',
+                  left: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--text-muted)',
+                  display: 'flex',
+                }}
+              >
+                👤
+              </span>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ad Soyad"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                style={{ paddingLeft: '44px' }}
+                required
+              />
+            </div>
+          </div>
+        )}
+
         <div className="form-group">
           <label className="form-label">E-Posta Adresi</label>
           <div style={{ position: 'relative' }}>
@@ -162,6 +208,35 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
             />
           </div>
         </div>
+
+        {isSignUp && (
+          <div className="form-group">
+            <label className="form-label">Şifreyi Onayla</label>
+            <div style={{ position: 'relative' }}>
+              <span
+                style={{
+                  position: 'absolute',
+                  left: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--text-muted)',
+                  display: 'flex',
+                }}
+              >
+                <FiLock />
+              </span>
+              <input
+                type="password"
+                className="form-control"
+                placeholder="Şifreyi Onayla"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                style={{ paddingLeft: '44px' }}
+                required
+              />
+            </div>
+          </div>
+        )}
 
         <button
           type="submit"
