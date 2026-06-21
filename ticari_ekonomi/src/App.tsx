@@ -370,6 +370,25 @@ function App() {
     }
   };
 
+  // Dynamic wallets with simulated stock portfolio values
+  const computedWallets = useMemo(() => {
+    return wallets.map(w => {
+      if (w.type === 'Borsa_TRY' || w.type === 'Borsa_USD') {
+        const stocks = userStocks.filter(s => s.wallet_id === w.id);
+        const stockVal = stocks.reduce((sum, s) => {
+          const price = stockPrices[s.symbol] || Number(s.average_cost) || 0;
+          return sum + Number(s.shares_count) * price;
+        }, 0);
+        return {
+          ...w,
+          cash_balance: Number(w.balance),
+          balance: Number((Number(w.balance) + stockVal).toFixed(2))
+        } as Wallet;
+      }
+      return w;
+    });
+  }, [wallets, userStocks, stockPrices]);
+
   // Render Loading Screen
   if (authLoading) {
     return (
@@ -416,25 +435,6 @@ function App() {
       </div>
     );
   }
-
-  // Dynamic wallets with simulated stock portfolio values
-  const computedWallets = useMemo(() => {
-    return wallets.map(w => {
-      if (w.type === 'Borsa_TRY' || w.type === 'Borsa_USD') {
-        const stocks = userStocks.filter(s => s.wallet_id === w.id);
-        const stockVal = stocks.reduce((sum, s) => {
-          const price = stockPrices[s.symbol] || Number(s.average_cost) || 0;
-          return sum + Number(s.shares_count) * price;
-        }, 0);
-        return {
-          ...w,
-          cash_balance: Number(w.balance),
-          balance: Number((Number(w.balance) + stockVal).toFixed(2))
-        } as Wallet;
-      }
-      return w;
-    });
-  }, [wallets, userStocks, stockPrices]);
 
   return (
     <div className="app-frame">
