@@ -429,7 +429,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
         <div className="card muted" style={{ textAlign: 'left', marginBottom: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
             <div className="card-title" style={{ margin: 0 }}>
-              {isDebtMode ? `Yeni ${debtType === 'Alınacak' ? 'Gelir' : 'Gider'} Kaydı Ekle` : `Yeni ${txType} Ekle`}
+              {isDebtMode ? `Yeni Gelecek ${debtType === 'Alınacak' ? 'Gelir' : 'Gider'} Ekle` : `Yeni ${txType} Ekle`}
             </div>
             <button
               type="button"
@@ -451,7 +451,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
                 cursor: 'pointer',
               }}
             >
-              {isDebtMode ? 'Normal İşleme Geç' : 'Borç Kaydına Geç'}
+              {isDebtMode ? 'Normal İşleme Geç' : 'Gelecek İşleme Geç'}
             </button>
           </div>
 
@@ -459,17 +459,17 @@ export const Transactions: React.FC<TransactionsProps> = ({
             <div className="tab-switch" style={{ marginBottom: '16px' }}>
               <button
                 type="button"
-                className={`tab-switch-btn ${debtType === 'Alınacak' ? 'active gelir' : ''}`}
-                onClick={() => setDebtType('Alınacak')}
-              >
-                Gelir (Bana Ödenecek)
-              </button>
-              <button
-                type="button"
                 className={`tab-switch-btn ${debtType === 'Verilecek' ? 'active gider' : ''}`}
                 onClick={() => setDebtType('Verilecek')}
               >
-                Gider (Ben Ödeyeceğim)
+                Gider
+              </button>
+              <button
+                type="button"
+                className={`tab-switch-btn ${debtType === 'Alınacak' ? 'active gelir' : ''}`}
+                onClick={() => setDebtType('Alınacak')}
+              >
+                Gelir
               </button>
             </div>
           ) : (
@@ -576,7 +576,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
                   disabled={loading}
                 >
                   <FiPlus />
-                  <span>{loading ? 'Ekleniyor...' : 'Borç Kaydı Ekle'}</span>
+                  <span>{loading ? 'Ekleniyor...' : 'Gelecek İşlem Ekle'}</span>
                 </button>
               </>
             ) : (
@@ -723,7 +723,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
           onClick={() => setActiveFeedTab('debts')}
           style={{ fontSize: '0.82rem', padding: '8px 12px' }}
         >
-          Borçlar & Alacaklar (Gerçekleşmemiş)
+          Gelecek İşlemler
         </button>
       </div>
 
@@ -909,7 +909,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
                     <div className="debt-body" style={{ padding: '14px', borderTop: '1px solid var(--border-color)', background: 'rgba(255, 255, 255, 0.005)', fontSize: '0.78rem' }}>
                       <div className="debt-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <span style={{ color: 'var(--text-muted)' }}>Tür:</span>
-                        <span style={{ fontWeight: 600, color: 'var(--text-bright)' }}>{debt.type} (Borç)</span>
+                        <span style={{ fontWeight: 600, color: 'var(--text-bright)' }}>{debt.type === 'Alınacak' ? 'Gelecek Gelir (Alacak)' : 'Gelecek Gider (Borç)'}</span>
                       </div>
                       <div className="debt-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <span style={{ color: 'var(--text-muted)' }}>İlişkili Hesap:</span>
@@ -989,7 +989,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
                 color: 'var(--text-muted)',
               }}
             >
-              Aktif borç veya alacak kaydı bulunmuyor.
+              Henüz gelecek bir işlem planlanmadı.
             </div>
           )}
         </div>
