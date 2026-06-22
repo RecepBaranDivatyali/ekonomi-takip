@@ -824,7 +824,7 @@ export const Borsa: React.FC<BorsaProps> = ({
       <h3 style={{ fontSize: '0.95rem', marginBottom: '12px', paddingLeft: '4px', color: 'var(--text-bright)' }}>
         Portföy Hisselerim
       </h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '340px', overflowY: 'auto', paddingRight: '4px', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px', marginBottom: '24px' }}>
         {portfolio.items.length > 0 ? (
           portfolio.items.map((item) => (
             <div
@@ -834,17 +834,17 @@ export const Borsa: React.FC<BorsaProps> = ({
                 cursor: 'default',
                 background: 'rgba(255, 255, 255, 0.01)',
                 borderColor: 'rgba(255, 255, 255, 0.03)',
-                padding: '4px 6px',
+                padding: '8px 10px',
               }}
             >
               <div className="tx-left" style={{ gap: '8px' }}>
                 <StockLogo symbol={item.symbol} profitLoss={item.profitLoss} />
                 <div className="tx-details">
-                  <span className="tx-description" style={{ fontSize: '0.7rem', fontWeight: 700 }}>
+                  <span className="tx-description" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
                     <span style={{ color: 'var(--text-bright)', marginRight: '6px' }}>{item.symbol}</span>
                     <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{item.shares_count} Adet</span>
                   </span>
-                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginTop: '1px', fontSize: '0.55rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '2px', fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                     <span>Maliyet: {formatCurrency(Number(item.average_cost), item.walletType, item.symbol)}</span>
                     <span>•</span>
                     <span>Güncel: {formatCurrency(item.currentPrice, item.walletType, item.symbol)}</span>
@@ -852,12 +852,12 @@ export const Borsa: React.FC<BorsaProps> = ({
                 </div>
               </div>
               <div className="tx-right" style={{ alignItems: 'flex-end' }}>
-                <span className="tx-amount" style={{ fontSize: '0.7rem', color: 'var(--text-bright)' }}>
+                <span className="tx-amount" style={{ fontSize: '0.78rem', color: 'var(--text-bright)' }}>
                   {formatCurrency(item.currentValue, item.walletType, item.symbol)}
                 </span>
                 <span
                   style={{
-                    fontSize: '0.55rem',
+                    fontSize: '0.65rem',
                     fontWeight: 700,
                     color: item.profitLoss >= 0 ? '#10b981' : '#ef4444',
                     marginTop: '1px',
