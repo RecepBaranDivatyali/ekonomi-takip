@@ -230,6 +230,14 @@ export const WalletDetails: React.FC<WalletDetailsProps> = ({
     const dailyChanges: { [dateStr: string]: number } = {};
     walletTx.forEach((tx) => {
       const cat = resolveTxCategory(tx, categories, wallets);
+      
+      const isBorsaWallet = wallet.type === 'Borsa_TRY' || wallet.type === 'Borsa_USD';
+      const isStockTx = cat.id === 'borsa-fallback' || tx.description.toLowerCase().includes('hisse');
+      
+      if (isBorsaWallet && isStockTx) {
+        return; // Ignore stock trades for cash/asset total reconstruction
+      }
+
       const isIncome = cat.type === 'Gelir';
       const amt = Number(tx.amount);
       const change = isIncome ? amt : -amt;
@@ -279,6 +287,78 @@ export const WalletDetails: React.FC<WalletDetailsProps> = ({
     return points.reverse(); // chronological (oldest to newest)
   }, [walletTx, wallet.balance, categories, wallets]);
 
+  // Calculate change statistics over time (1 day, 30 days, total)
+  const changeStats = useMemo(() => {
+    if (wallet.type === 'Vadesiz') return null;
+
+    // Group daily changes
+    const dailyChanges: { [dateStr: string]: number } = {};
+    walletTx.forEach((tx) => {
+      const cat = resolveTxCategory(tx, categories, wallets);
+      const isBorsaWallet = wallet.type === 'Borsa_TRY' || wallet.type === 'Borsa_USD';
+      const isStockTx = cat.id === 'borsa-fallback' || tx.description.toLowerCase().includes('hisse');
+      
+      if (isBorsaWallet && isStockTx) return; // Ignore stock trades for cash/asset total reconstruction
+      
+      const isIncome = cat.type === 'Gelir';
+      const amt = Number(tx.amount);
+      const change = isIncome ? amt : -amt;
+      dailyChanges[tx.date] = (dailyChanges[tx.date] || 0) + change;
+    });
+
+    const getBalanceAtDate = (targetDateStr: string) => {
+      let tempBal = Number(wallet.balance);
+      const sortedDates = Object.keys(dailyChanges).sort((a, b) => b.localeCompare(a));
+      
+      for (const dStr of sortedDates) {
+        if (dStr > targetDateStr) {
+          tempBal -= dailyChanges[dStr];
+        } else {
+          break;
+        }
+      }
+      return tempBal;
+    };
+
+    const today = new Date();
+    
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+
+    const currentBal = Number(wallet.balance);
+    const yesterdayBal = getBalanceAtDate(yesterdayStr);
+    const thirtyDaysAgoBal = getBalanceAtDate(thirtyDaysAgoStr);
+    
+    let startBal = currentBal;
+    Object.values(dailyChanges).forEach(c => {
+      startBal -= c;
+    });
+
+    const getDiffStr = (historicalBal: number) => {
+      const diff = currentBal - historicalBal;
+      const pct = historicalBal !== 0 ? (diff / historicalBal) * 100 : 0;
+      const isUp = diff >= 0;
+      const formattedDiff = formatCurrency(Math.abs(diff), wallet.type);
+      return {
+        diff,
+        pct: Number(pct.toFixed(2)),
+        isUp,
+        text: `${isUp ? '▲' : '▼'} ${formattedDiff} (${isUp ? '+' : ''}${pct.toFixed(1)}%)`
+      };
+    };
+
+    return {
+      day1: getDiffStr(yesterdayBal),
+      days30: getDiffStr(thirtyDaysAgoBal),
+      total: getDiffStr(startBal)
+    };
+  }, [wallet, walletTx, categories, wallets]);
+
   return (
     <div style={{ textAlign: 'left' }}>
       {/* Back Header */}
@@ -317,6 +397,56 @@ export const WalletDetails: React.FC<WalletDetailsProps> = ({
           <div style={{ display: 'flex', gap: '12px', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>
             <span>Limit: {formatCurrency(wallet.credit_limit || 0, 'Vadesiz')}</span>
             <span>Son Ödeme: Ayın {wallet.due_date || 15}'i</span>
+          </div>
+        )}
+
+        {changeStats && (
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.02)',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              fontSize: '0.7rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2px',
+              border: '1px solid rgba(255, 255, 255, 0.04)'
+            }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.58rem', fontWeight: 600 }}>1 GÜNLÜK DEĞİŞİM</span>
+              <span style={{ color: changeStats.day1.isUp ? '#34d399' : '#f87171', fontWeight: 700 }}>
+                {changeStats.day1.text}
+              </span>
+            </div>
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.02)',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              fontSize: '0.7rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2px',
+              border: '1px solid rgba(255, 255, 255, 0.04)'
+            }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.58rem', fontWeight: 600 }}>30 GÜNLÜK DEĞİŞİM</span>
+              <span style={{ color: changeStats.days30.isUp ? '#34d399' : '#f87171', fontWeight: 700 }}>
+                {changeStats.days30.text}
+              </span>
+            </div>
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.02)',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              fontSize: '0.7rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2px',
+              border: '1px solid rgba(255, 255, 255, 0.04)'
+            }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.58rem', fontWeight: 600 }}>TOPLAM DEĞİŞİM</span>
+              <span style={{ color: changeStats.total.isUp ? '#34d399' : '#f87171', fontWeight: 700 }}>
+                {changeStats.total.text}
+              </span>
+            </div>
           </div>
         )}
       </div>
