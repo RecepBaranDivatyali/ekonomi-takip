@@ -90,23 +90,63 @@ function App() {
 
   // Simulated & live BIST stock prices and changes
   const [stockPrices, setStockPrices] = useState<{ [key: string]: { price: number; change: number } }>({
-    THYAO: { price: 312.50, change: 0.25 },
-    BIMAS: { price: 418.20, change: -0.10 },
-    EREGL: { price: 51.90, change: 1.20 },
-    ASELS: { price: 63.85, change: -0.05 },
-    TUPRS: { price: 164.50, change: 0.80 },
-    KCHOL: { price: 208.70, change: -1.50 },
-    YKBNK: { price: 28.10, change: 0.15 },
-    SAHOL: { price: 84.60, change: 2.10 },
-    SASA: { price: 38.30, change: -0.90 }
+    // Turkish Funds Fallbacks
+    AFT: { price: 0.145212, change: 0.85 },
+    MAC: { price: 0.321455, change: -0.42 },
+    TTE: { price: 0.285612, change: 1.15 },
+    YAS: { price: 0.412563, change: 0.60 },
+    IPJ: { price: 0.098412, change: -0.15 },
+    GMR: { price: 0.541258, change: 1.30 },
+    IIH: { price: 0.231245, change: -0.80 },
+
+    // BIST Non-API Stock Fallbacks
+    LIDER: { price: 72.85, change: 1.25 },
+
+    // US Stocks & ETFs (USD Borsa)
+    AAPL: { price: 215.30, change: 0.45 },
+    MSFT: { price: 442.10, change: -0.22 },
+    TSLA: { price: 228.40, change: 1.85 },
+    NVDA: { price: 924.50, change: 3.10 },
+    AMZN: { price: 188.75, change: -0.15 },
+    GOOGL: { price: 178.20, change: 0.65 },
+    META: { price: 485.40, change: 1.10 },
+    NFLX: { price: 625.90, change: -0.85 },
+    SPY: { price: 542.30, change: 0.12 },
+    QQQ: { price: 468.50, change: 0.25 },
+    VOO: { price: 498.15, change: 0.15 },
+    ARKK: { price: 44.60, change: -1.20 },
+    GLD: { price: 224.80, change: 0.75 },
+    TLT: { price: 92.40, change: -0.35 }
   });
 
-  // Fetch and update live stock prices (with 30-second polling)
+  // Fetch and update live stock prices (with 30-second polling & US/fund simulations)
   useEffect(() => {
     const updateStockPrices = async () => {
       try {
         const prices = await fetchLiveStockPrices();
-        setStockPrices(prev => ({ ...prev, ...prices }));
+        setStockPrices(prev => {
+          const nextPrices = { ...prev, ...prices };
+          
+          // Random walk for custom symbols (US stocks, TEFAS funds, LIDER)
+          const customKeys = [
+            'AFT', 'MAC', 'TTE', 'YAS', 'IPJ', 'GMR', 'IIH', 'LIDER',
+            'AAPL', 'MSFT', 'TSLA', 'NVDA', 'AMZN', 'GOOGL', 'META', 'NFLX',
+            'SPY', 'QQQ', 'VOO', 'ARKK', 'GLD', 'TLT'
+          ];
+          customKeys.forEach(key => {
+            if (nextPrices[key]) {
+              const current = nextPrices[key];
+              const drift = (Math.random() - 0.5) * 0.004; // max 0.2% change
+              // Funds use 6 decimal places, stocks use 2 decimal places
+              const decimals = key.length === 3 && !['QQQ', 'SPY', 'VOO', 'GLD', 'TLT'].includes(key) ? 6 : 2;
+              const newPrice = Number((current.price * (1 + drift)).toFixed(decimals));
+              const newChange = Number((current.change + drift * 100).toFixed(2));
+              nextPrices[key] = { price: newPrice, change: newChange };
+            }
+          });
+          
+          return nextPrices;
+        });
       } catch (error) {
         console.error('Failed to fetch live stock prices:', error);
       }
@@ -393,6 +433,16 @@ function App() {
     });
   }, [wallets, userStocks, stockPrices]);
 
+  // If active tab is borsa but no borsa wallets exist, redirect to dashboard
+  useEffect(() => {
+    if (activeTab === 'borsa') {
+      const hasBorsa = computedWallets.some(w => w.type === 'Borsa_TRY' || w.type === 'Borsa_USD');
+      if (computedWallets.length > 0 && !hasBorsa) {
+        setActiveTab('dashboard');
+      }
+    }
+  }, [computedWallets, activeTab]);
+
   // Render Loading Screen
   if (authLoading) {
     return (
@@ -553,7 +603,11 @@ function App() {
             </div>
 
       {/* Sticky Tab Navigation Footer */}
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Navbar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        hasBorsaWallet={computedWallets.some(w => w.type === 'Borsa_TRY' || w.type === 'Borsa_USD')}
+      />
     </div>
   );
 }

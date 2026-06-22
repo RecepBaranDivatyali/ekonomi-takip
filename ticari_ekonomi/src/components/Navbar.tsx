@@ -4,14 +4,15 @@ import { FiPieChart, FiList, FiCreditCard, FiTrendingUp, FiGrid, FiTag } from 'r
 interface NavbarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  hasBorsaWallet: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
+export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, hasBorsaWallet }) => {
   const navItems = [
     { id: 'dashboard', label: 'Özet', icon: <FiPieChart /> },
     { id: 'transactions', label: 'İşlemler', icon: <FiList /> },
     { id: 'wallets', label: 'Cüzdanlar', icon: <FiCreditCard /> },
-    { id: 'borsa', label: 'Borsa', icon: <FiTrendingUp /> },
+    ...(hasBorsaWallet ? [{ id: 'borsa', label: 'Borsa', icon: <FiTrendingUp /> }] : []),
     { id: 'categories', label: 'Kategoriler', icon: <FiGrid /> },
     { id: 'tags', label: 'Etiketler', icon: <FiTag /> },
   ];
@@ -31,3 +32,4 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
     </nav>
   );
 };
+

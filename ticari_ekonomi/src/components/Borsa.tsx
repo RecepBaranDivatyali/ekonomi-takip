@@ -39,19 +39,23 @@ interface BorsaProps {
   userId: string;
 }
 
-const STOCKS_LIST = [
+const TRY_STOCKS = [
   'AEFES', 'AGHOL', 'AKBNK', 'AKSA', 'AKSEN', 'ALARK', 'ALTNY', 'ANHYT', 'ANSGR', 'ARCLK', 
   'ASELS', 'ASTOR', 'BERA', 'BIMAS', 'BRSAN', 'BRYAT', 'BSOKE', 'BTCIM', 'CANTE', 'CCOLA', 
   'CIMSA', 'CLEBI', 'CVKMD', 'CWENE', 'DAPGM', 'DOAS', 'DOHOL', 'DSTKF', 'ECILC', 'EFOR', 
   'EGEEN', 'EKGYO', 'ENERY', 'ENJSA', 'ENKAI', 'EREGL', 'EUPWR', 'FENER', 'FROTO', 'GARAN', 
   'GENIL', 'GESAN', 'GLRMK', 'GRSEL', 'GRTHO', 'GSRAY', 'GUBRF', 'HALKB', 'HEKTS', 'IEYHO', 
-  'ISCTR', 'ISMEN', 'KCAER', 'KCHOL', 'KONTR', 'KONYA', 'KRDMD', 'KTLEV', 'KUYAS', 'MAGEN', 
-  'MAVI', 'MGROS', 'MIATK', 'MPARK', 'OBAMS', 'ODAS', 'OTKAR', 'OYAKC', 'PAHOL', 'PASEU', 
-  'PETKM', 'PGSUS', 'RALYH', 'REEDR', 'RYGYO', 'SAHOL', 'SARKY', 'SASA', 'SELEC', 'SISE', 
-  'SKBNK', 'SOKM', 'TABGD', 'TAVHL', 'TCELL', 'THYAO', 'TKFEN', 'TOASO', 'TRALT', 'TRENJ', 
-  'TRMET', 'TSKB', 'TTKOM', 'TTRAK', 'TUKAS', 'TUPRS', 'TUREX', 'TURSG', 'ULKER', 'VAKBN', 
-  'VESTL', 'YKBNK', 'ZOREN'
+  'ISCTR', 'ISMEN', 'KCAER', 'KCHOL', 'KONTR', 'KONYA', 'KRDMD', 'KTLEV', 'KUYAS', 'LIDER', 
+  'MAGEN', 'MAVI', 'MGROS', 'MIATK', 'MPARK', 'OBAMS', 'ODAS', 'OTKAR', 'OYAKC', 'PAHOL', 
+  'PASEU', 'PETKM', 'PGSUS', 'RALYH', 'REEDR', 'RYGYO', 'SAHOL', 'SARKY', 'SASA', 'SELEC', 
+  'SISE', 'SKBNK', 'SOKM', 'TABGD', 'TAVHL', 'TCELL', 'THYAO', 'TKFEN', 'TOASO', 'TRALT', 
+  'TRENJ', 'TRMET', 'TSKB', 'TTKOM', 'TTRAK', 'TUKAS', 'TUPRS', 'TUREX', 'TURSG', 'ULKER', 
+  'VAKBN', 'VESTL', 'YKBNK', 'ZOREN'
 ];
+const TRY_FUNDS = ['AFT', 'MAC', 'TTE', 'YAS', 'IPJ', 'GMR', 'IIH'];
+
+const USD_STOCKS = ['AAPL', 'MSFT', 'TSLA', 'NVDA', 'AMZN', 'GOOGL', 'META', 'NFLX'];
+const USD_ETFS = ['SPY', 'QQQ', 'VOO', 'ARKK', 'GLD', 'TLT'];
 
 export const Borsa: React.FC<BorsaProps> = ({
   wallets,
@@ -66,27 +70,53 @@ export const Borsa: React.FC<BorsaProps> = ({
     return wallets.filter(w => w.type === 'Borsa_TRY' || w.type === 'Borsa_USD');
   }, [wallets]);
 
-  // Filter transactions to only borsa wallets transactions
+  // Determine active market type (TRY / USD)
+  const [activeMarket, setActiveMarket] = useState<'TRY' | 'USD'>(() => {
+    const firstBorsa = wallets.find(w => w.type === 'Borsa_TRY' || w.type === 'Borsa_USD');
+    if (firstBorsa) {
+      return firstBorsa.type === 'Borsa_USD' ? 'USD' : 'TRY';
+    }
+    return 'TRY';
+  });
+
+  // Keep activeMarket in sync if available wallets change
+  React.useEffect(() => {
+    const hasTry = borsaWallets.some(w => w.type === 'Borsa_TRY');
+    const hasUsd = borsaWallets.some(w => w.type === 'Borsa_USD');
+    if (hasTry && !hasUsd && activeMarket !== 'TRY') {
+      setActiveMarket('TRY');
+    } else if (hasUsd && !hasTry && activeMarket !== 'USD') {
+      setActiveMarket('USD');
+    }
+  }, [borsaWallets, activeMarket]);
+
+  // Filter transactions to only active borsa wallets transactions
   const borsaTransactions = useMemo(() => {
-    const borsaWalletIds = new Set(borsaWallets.map(w => w.id));
+    const borsaWalletIds = new Set(
+      borsaWallets
+        .filter(w => activeMarket === 'USD' ? w.type === 'Borsa_USD' : w.type === 'Borsa_TRY')
+        .map(w => w.id)
+    );
     return transactions
       .filter(tx => borsaWalletIds.has(tx.wallet_id))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, borsaWallets]);
+  }, [transactions, borsaWallets, activeMarket]);
 
   // Form States
   const [tradeType, setTradeType] = useState<'AL' | 'SAT'>('AL');
-  const [walletId, setWalletId] = useState(borsaWallets[0]?.id || '');
-  const [symbol, setSymbol] = useState(STOCKS_LIST[0]);
+  const [walletId, setWalletId] = useState('');
+  const [symbol, setSymbol] = useState(() => activeMarket === 'TRY' ? 'THYAO' : 'AAPL');
   const [sharesCount, setSharesCount] = useState('');
-  const [price, setPrice] = useState(() => {
-    const sym = STOCKS_LIST[0];
-    const quote = stockPrices[sym];
-    return String(quote ? quote.price : 100);
-  });
+  const [price, setPrice] = useState('100');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+
+  // Sync default symbol when active market changes
+  React.useEffect(() => {
+    const defaultSymbol = activeMarket === 'TRY' ? 'THYAO' : 'AAPL';
+    setSymbol(defaultSymbol);
+  }, [activeMarket]);
 
   // Sync selected stock price when symbol changes
   React.useEffect(() => {
@@ -96,41 +126,55 @@ export const Borsa: React.FC<BorsaProps> = ({
     }
   }, [symbol, stockPrices]);
 
-  // Default wallet selector sync
+  // Sync walletId based on active market and borsaWallets
   React.useEffect(() => {
-    if (!walletId && borsaWallets.length > 0) {
-      setWalletId(borsaWallets[0].id);
+    const filtered = borsaWallets.filter(w => activeMarket === 'USD' ? w.type === 'Borsa_USD' : w.type === 'Borsa_TRY');
+    if (filtered.length > 0) {
+      if (!filtered.some(w => w.id === walletId)) {
+        setWalletId(filtered[0].id);
+      }
+    } else {
+      setWalletId('');
     }
-  }, [borsaWallets, walletId]);
+  }, [activeMarket, borsaWallets, walletId]);
 
-  // User's active stock portfolio summary
+  // User's active stock portfolio summary based on selected market
   const portfolio = useMemo(() => {
     let totalStockVal = 0;
     let totalInvested = 0;
-    const items = userStocks.map(stock => {
-      const w = wallets.find(w => w.id === stock.wallet_id);
-      const sym = stock.symbol === 'THY' ? 'THYAO' : stock.symbol.toUpperCase();
-      const quote = stockPrices[sym];
-      const currentPrice = quote ? quote.price : (stock.average_cost || 0);
-      const currentValue = Number(stock.shares_count) * currentPrice;
-      const totalCost = Number(stock.shares_count) * Number(stock.average_cost);
-      const profitLoss = currentValue - totalCost;
-      const profitLossPercent = totalCost > 0 ? (profitLoss / totalCost) * 100 : 0;
+    
+    const items = userStocks
+      .map(stock => {
+        const w = wallets.find(w => w.id === stock.wallet_id);
+        if (!w) return null;
+        
+        const isUSDWallet = w.type === 'Borsa_USD';
+        const matchesMarket = activeMarket === 'USD' ? isUSDWallet : !isUSDWallet;
+        if (!matchesMarket) return null;
 
-      totalStockVal += currentValue;
-      totalInvested += totalCost;
+        const sym = stock.symbol === 'THY' ? 'THYAO' : stock.symbol.toUpperCase();
+        const quote = stockPrices[sym];
+        const currentPrice = quote ? quote.price : (stock.average_cost || 0);
+        const currentValue = Number(stock.shares_count) * currentPrice;
+        const totalCost = Number(stock.shares_count) * Number(stock.average_cost);
+        const profitLoss = currentValue - totalCost;
+        const profitLossPercent = totalCost > 0 ? (profitLoss / totalCost) * 100 : 0;
 
-      return {
-        ...stock,
-        walletName: w?.name || 'Bilinmeyen Borsa Hesabı',
-        walletType: w?.type,
-        currentPrice,
-        currentValue,
-        totalCost,
-        profitLoss,
-        profitLossPercent,
-      };
-    });
+        totalStockVal += currentValue;
+        totalInvested += totalCost;
+
+        return {
+          ...stock,
+          walletName: w.name,
+          walletType: w.type,
+          currentPrice,
+          currentValue,
+          totalCost,
+          profitLoss,
+          profitLossPercent,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
 
     const totalProfitLoss = totalStockVal - totalInvested;
     const totalProfitLossPercent = totalInvested > 0 ? (totalProfitLoss / totalInvested) * 100 : 0;
@@ -142,18 +186,26 @@ export const Borsa: React.FC<BorsaProps> = ({
       totalProfitLoss,
       totalProfitLossPercent,
     };
-  }, [userStocks, wallets, stockPrices]);
+  }, [userStocks, wallets, stockPrices, activeMarket]);
 
   // Unique symbols owned by user to display in watchlist, falling back to popular ones if portfolio is empty
   const watchlistSymbols = useMemo(() => {
-    if (userStocks.length > 0) {
-      const symbols = Array.from(
-        new Set(userStocks.map(s => s.symbol === 'THY' ? 'THYAO' : s.symbol.toUpperCase()))
+    const marketStocks = userStocks.filter(stock => {
+      const w = wallets.find(w => w.id === stock.wallet_id);
+      if (!w) return false;
+      return activeMarket === 'USD' ? w.type === 'Borsa_USD' : w.type !== 'Borsa_USD';
+    });
+
+    if (marketStocks.length > 0) {
+      return Array.from(
+        new Set(marketStocks.map(s => s.symbol === 'THY' ? 'THYAO' : s.symbol.toUpperCase()))
       );
-      return symbols;
     }
-    return ['THYAO', 'BIMAS', 'EREGL', 'AKBNK', 'KCHOL', 'TUPRS'];
-  }, [userStocks]);
+    
+    return activeMarket === 'TRY' 
+      ? ['THYAO', 'BIMAS', 'EREGL', 'AKBNK', 'KCHOL', 'TUPRS']
+      : ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'SPY', 'QQQ'];
+  }, [userStocks, wallets, activeMarket]);
 
   // Selected wallet summary
   const activeBorsaWallet = useMemo(() => {
@@ -309,12 +361,78 @@ export const Borsa: React.FC<BorsaProps> = ({
   };
 
   const formatCurrency = (val: number, walletType?: string) => {
-    const isUSD = walletType === 'Borsa_USD' || walletType === 'Dolar';
+    const isUSD = walletType === 'Borsa_USD' || walletType === 'Dolar' || (walletType === undefined && activeMarket === 'USD');
+    const isSmallFund = val > 0 && val < 1;
+    const decimals = isSmallFund ? 6 : 2;
     return new Intl.NumberFormat(isUSD ? 'en-US' : 'tr-TR', {
       style: 'currency',
       currency: isUSD ? 'USD' : 'TRY',
-      minimumFractionDigits: 2,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
     }).format(val);
+  };
+
+  // Helper to render asset options categorized in groups
+  const renderAssetOptions = () => {
+    if (activeMarket === 'TRY') {
+      const stocks = TRY_STOCKS;
+      const funds = TRY_FUNDS;
+      return (
+        <>
+          <optgroup label="BIST Hisse Senetleri">
+            {stocks.map(s => {
+              const quote = stockPrices[s];
+              const livePrice = quote ? quote.price : 0;
+              return (
+                <option key={s} value={s}>
+                  {s} - Güncel: {formatCurrency(livePrice, 'Borsa_TRY')}
+                </option>
+              );
+            })}
+          </optgroup>
+          <optgroup label="Yatırım Fonları (TEFAS)">
+            {funds.map(s => {
+              const quote = stockPrices[s];
+              const livePrice = quote ? quote.price : 0;
+              return (
+                <option key={s} value={s}>
+                  {s} - Güncel: {formatCurrency(livePrice, 'Borsa_TRY')}
+                </option>
+              );
+            })}
+          </optgroup>
+        </>
+      );
+    } else {
+      const stocks = USD_STOCKS;
+      const etfs = USD_ETFS;
+      return (
+        <>
+          <optgroup label="Global Hisse Senetleri (USD)">
+            {stocks.map(s => {
+              const quote = stockPrices[s];
+              const livePrice = quote ? quote.price : 0;
+              return (
+                <option key={s} value={s}>
+                  {s} - Güncel: {formatCurrency(livePrice, 'Borsa_USD')}
+                </option>
+              );
+            })}
+          </optgroup>
+          <optgroup label="Yabancı Fonlar (ETF - USD)">
+            {etfs.map(s => {
+              const quote = stockPrices[s];
+              const livePrice = quote ? quote.price : 0;
+              return (
+                <option key={s} value={s}>
+                  {s} - Güncel: {formatCurrency(livePrice, 'Borsa_USD')}
+                </option>
+              );
+            })}
+          </optgroup>
+        </>
+      );
+    }
   };
 
   return (
@@ -349,6 +467,28 @@ export const Borsa: React.FC<BorsaProps> = ({
         )}
       </div>
 
+      {/* TRY vs USD Borsa Switcher (displays only if user has both types of wallets) */}
+      {borsaWallets.some(w => w.type === 'Borsa_TRY') && borsaWallets.some(w => w.type === 'Borsa_USD') && (
+        <div className="tab-switch" style={{ marginBottom: '20px' }}>
+          <button
+            type="button"
+            className={`tab-switch-btn ${activeMarket === 'TRY' ? 'active' : ''}`}
+            onClick={() => setActiveMarket('TRY')}
+            style={{ padding: '8px 12px', fontSize: '0.8rem' }}
+          >
+            🇹🇷 BIST Portföyü (₺)
+          </button>
+          <button
+            type="button"
+            className={`tab-switch-btn ${activeMarket === 'USD' ? 'active' : ''}`}
+            onClick={() => setActiveMarket('USD')}
+            style={{ padding: '8px 12px', fontSize: '0.8rem' }}
+          >
+            🇺🇸 Global Portföy ($)
+          </button>
+        </div>
+      )}
+
       {borsaWallets.length === 0 && (
         <div className="card error" style={{ padding: '14px', marginBottom: '16px' }}>
           <FiAlertCircle style={{ color: '#ef4444', marginRight: '6px' }} />
@@ -369,7 +509,7 @@ export const Borsa: React.FC<BorsaProps> = ({
       {showForm && borsaWallets.length > 0 && (
         <div className="card muted" style={{ marginBottom: '24px' }}>
           <div className="card-title" style={{ marginBottom: '14px' }}>
-            Hisse Senedi Al / Sat
+            Hisse / Fon Al / Sat
           </div>
           <form onSubmit={handleTrade}>
             <div className="tab-switch">
@@ -378,14 +518,14 @@ export const Borsa: React.FC<BorsaProps> = ({
                 className={`tab-switch-btn ${tradeType === 'AL' ? 'active gelir' : ''}`}
                 onClick={() => setTradeType('AL')}
               >
-                Hisse Al (BUY)
+                Yatırım Al (BUY)
               </button>
               <button
                 type="button"
                 className={`tab-switch-btn ${tradeType === 'SAT' ? 'active gider' : ''}`}
                 onClick={() => setTradeType('SAT')}
               >
-                Hisse Sat (SELL)
+                Yatırım Sat (SELL)
               </button>
             </div>
 
@@ -398,16 +538,19 @@ export const Borsa: React.FC<BorsaProps> = ({
                 required
                 style={{ background: '#121826' }}
               >
-                {borsaWallets.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name} (Nakit: {formatCurrency(w.cash_balance ?? w.balance, w.type)})
-                  </option>
-                ))}
+                {borsaWallets
+                  .filter(w => activeMarket === 'USD' ? w.type === 'Borsa_USD' : w.type === 'Borsa_TRY')
+                  .map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name} (Nakit: {formatCurrency(w.cash_balance ?? w.balance, w.type)})
+                    </option>
+                  ))
+                }
               </select>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Hisse Senedi</label>
+              <label className="form-label">Yatırım Enstrümanı</label>
               <select
                 className="form-control"
                 value={symbol}
@@ -415,15 +558,7 @@ export const Borsa: React.FC<BorsaProps> = ({
                 required
                 style={{ background: '#121826' }}
               >
-                {STOCKS_LIST.map((s) => {
-                  const quote = stockPrices[s];
-                  const livePrice = quote ? quote.price : 0;
-                  return (
-                    <option key={s} value={s}>
-                      {s} - Güncel: {formatCurrency(livePrice, activeBorsaWallet?.type)}
-                    </option>
-                  );
-                })}
+                {renderAssetOptions()}
               </select>
             </div>
 
@@ -603,16 +738,16 @@ export const Borsa: React.FC<BorsaProps> = ({
           ))
         ) : (
           <div style={{ textAlign: 'center', padding: '24px 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            Sahip olduğunuz bir hisse bulunmuyor.
+            Sahip olduğunuz bir hisse veya fon bulunmuyor.
           </div>
         )}
       </div>
 
       {/* Live Market Watchlist (BIST Watchlist) */}
       <h3 style={{ fontSize: '0.95rem', marginBottom: '12px', paddingLeft: '4px', color: 'var(--text-bright)' }}>
-        Canlı Hisse Fiyatları (BIST)
+        {activeMarket === 'TRY' ? 'Canlı BIST Fiyatları (Hisse & Fon)' : 'Canlı Global Fiyatlar (Hisse & ETF)'}
       </h3>
-      {userStocks.length === 0 && (
+      {portfolio.items.length === 0 && (
         <div 
           style={{ 
             background: 'rgba(59, 130, 246, 0.06)',
@@ -627,7 +762,7 @@ export const Borsa: React.FC<BorsaProps> = ({
             lineHeight: '1.4'
           }}
         >
-          💡 <strong>Bilgi:</strong> Portföyünüz henüz boş olduğu için popüler hisse senetleri listelenmektedir. Kendi hisselerinizi satın aldıkça burada sadece kendi hisseleriniz listelenecektir.
+          💡 <strong>Bilgi:</strong> Portföyünüz henüz boş olduğu için popüler {activeMarket === 'TRY' ? 'BIST hisse ve fonları' : 'global hisse ve ETF\'ler'} listelenmektedir. Yatırım yaptıkça burada sadece kendi enstrümanlarınız listelenecektir.
         </div>
       )}
       <div
