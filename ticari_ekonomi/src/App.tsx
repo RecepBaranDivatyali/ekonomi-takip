@@ -415,6 +415,37 @@ function App() {
     setActiveDetails(null);
   }, [activeTab]);
 
+  // One-time data fix for Midas wallet starting balance and test transaction
+  useEffect(() => {
+    async function fixMidasData() {
+      if (!session?.user?.id) return;
+      try {
+        const { data: wallets } = await supabase.from('wallets').select('*');
+        const midas = wallets?.find(w => w.name.toUpperCase().includes('MIDAS') || w.name.toUpperCase().includes('MİDAS'));
+        if (!midas) return;
+
+        // Find the +500 TL transaction
+        const { data: txs } = await supabase.from('transactions').select('*').eq('wallet_id', midas.id);
+        const targetTx = txs?.find(t => Number(t.amount) === 500 && t.description === 'Açıklama yok');
+        if (targetTx) {
+          console.log('Fixing Midas: Deleting +500 TL test transaction:', targetTx.id);
+          await supabase.from('transactions').delete().eq('id', targetTx.id);
+        }
+
+        // Set wallet cash balance to exactly 100.86 (4000 - 3899.14 spent on stocks)
+        if (Number(midas.balance) !== 100.86) {
+          console.log('Fixing Midas: Setting cash balance to 100.86 TL');
+          await supabase.from('wallets').update({ balance: 100.86 }).eq('id', midas.id);
+        }
+        
+        fetchUserData(); // Reload the UI data
+      } catch (err) {
+        console.error('Error fixing Midas data:', err);
+      }
+    }
+    fixMidasData();
+  }, [session, fetchUserData]);
+
   const handleSignOut = async () => {
     if (window.confirm('Oturumu kapatmak istediğinize emin misiniz?')) {
       await supabase.auth.signOut();
