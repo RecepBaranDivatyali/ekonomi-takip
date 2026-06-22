@@ -91,19 +91,19 @@ function App() {
   // Simulated & live BIST stock prices and changes
   const [stockPrices, setStockPrices] = useState<{ [key: string]: { price: number; change: number } }>({
     // Turkish Funds Fallbacks
-    AFT: { price: 0.145212, change: 0.85 },
-    MAC: { price: 0.321455, change: -0.42 },
-    TTE: { price: 0.285612, change: 1.15 },
-    YAS: { price: 0.412563, change: 0.60 },
-    IPJ: { price: 0.098412, change: -0.15 },
-    GMR: { price: 0.541258, change: 1.30 },
-    IIH: { price: 0.231245, change: -0.80 },
-    PNU: { price: 2.145823, change: 0.12 },
-    PRY: { price: 1.845612, change: 0.08 },
-    TP2: { price: 5.412563, change: 0.15 },
+    AFT: { price: 1.048200, change: 0.85 },
+    MAC: { price: 0.838200, change: -0.42 },
+    TTE: { price: 1.695600, change: 1.15 },
+    YAS: { price: 14.500300, change: 0.60 },
+    IPJ: { price: 21.164800, change: -0.15 },
+    GMR: { price: 1.475300, change: 1.30 },
+    IIH: { price: 33.674900, change: -0.80 },
+    PNU: { price: 1.137246, change: 0.12 },
+    PRY: { price: 2.914402, change: 0.08 },
+    TP2: { price: 2.001750, change: 0.15 },
 
     // BIST Non-API Stock Fallbacks
-    LIDER: { price: 72.85, change: 1.25 },
+    LIDER: { price: 99.25, change: 0.00 },
 
     // US Stocks & ETFs (USD Borsa)
     AAPL: { price: 215.30, change: 0.45 },
@@ -130,9 +130,8 @@ function App() {
         setStockPrices(prev => {
           const nextPrices = { ...prev, ...prices };
           
-          // Random walk for custom symbols (US stocks, TEFAS funds, LIDER)
+          // Random walk for custom symbols (US stocks)
           const customKeys = [
-            'AFT', 'MAC', 'TTE', 'YAS', 'IPJ', 'GMR', 'IIH', 'PNU', 'PRY', 'TP2', 'LIDER',
             'AAPL', 'MSFT', 'TSLA', 'NVDA', 'AMZN', 'GOOGL', 'META', 'NFLX',
             'SPY', 'QQQ', 'VOO', 'ARKK', 'GLD', 'TLT'
           ];

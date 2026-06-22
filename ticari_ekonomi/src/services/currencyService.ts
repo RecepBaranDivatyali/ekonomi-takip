@@ -76,7 +76,7 @@ export interface StockQuote {
 }
 
 export async function fetchLiveStockPrices(): Promise<{ [key: string]: StockQuote }> {
-  const response = await fetch('https://doviz-api.onrender.com/api/borsa');
+  const response = await fetch('https://doviz-api.onrender.com/api/borsaAll');
   if (!response.ok) {
     throw new Error(`Borsa API HTTP error! status: ${response.status}`);
   }

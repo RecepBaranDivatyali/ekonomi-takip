@@ -1,6 +1,147 @@
 import React, { useState, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
-import { FiTrendingUp, FiTrendingDown, FiAlertCircle, FiClock } from 'react-icons/fi';
+import { FiTrendingUp, FiTrendingDown, FiAlertCircle, FiClock, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+
+const getStockLogoUrl = (symbol: string): string => {
+  const s = symbol.toUpperCase();
+  const domainMap: { [key: string]: string } = {
+    // BIST 100 Stocks
+    THYAO: 'turkishairlines.com',
+    THY: 'turkishairlines.com',
+    BIMAS: 'bim.com.tr',
+    EREGL: 'erdemir.com.tr',
+    AKBNK: 'akbank.com',
+    KCHOL: 'koc.com.tr',
+    TUPRS: 'tupras.com.tr',
+    ASELS: 'aselsan.com.tr',
+    ENKAI: 'enka.com',
+    FENER: 'fenerbahce.org',
+    FROTO: 'fordotosan.com.tr',
+    ISMEN: 'isinvestment.com',
+    AEFES: 'anadoluefes.com',
+    AGHOL: 'anadolugrubu.com.tr',
+    AKSA: 'aksa.com',
+    ALARK: 'alarko.com.tr',
+    ARCLK: 'arcelikglobal.com',
+    ASTOR: 'astor.com.tr',
+    CCOLA: 'cci.com.tr',
+    DOAS: 'dogusotomotiv.com.tr',
+    DOHOL: 'doganholding.com.tr',
+    EKGYO: 'emlakkonut.com.tr',
+    ENJSA: 'enerjisa.com.tr',
+    GARAN: 'garantibbva.com.tr',
+    HALKB: 'halkbank.com.tr',
+    HEKTS: 'hektas.com.tr',
+    ISCTR: 'isbank.com.tr',
+    MAVI: 'mavi.com',
+    MGROS: 'migroskurumsal.com',
+    OTKAR: 'otokar.com.tr',
+    PETKM: 'petkim.com.tr',
+    PGSUS: 'flypgs.com',
+    SAHOL: 'sabanciholding.com',
+    SASA: 'sasa.com.tr',
+    SISE: 'sisecam.com.tr',
+    SOKM: 'sokmarket.com.tr',
+    TAVHL: 'tavhavalimanlari.com.tr',
+    TCELL: 'turkcell.com.tr',
+    TKFEN: 'tekfen.com.tr',
+    TOASO: 'tofas.com.tr',
+    TTKOM: 'turktelekom.com.tr',
+    TTRAK: 'turktraktor.com.tr',
+    ULKER: 'ulker.com.tr',
+    VAKBN: 'vakifbank.com.tr',
+    VESTL: 'vestel.com.tr',
+    YKBNK: 'yapikredi.com.tr',
+    ZOREN: 'zorluenerji.com.tr',
+    LIDER: 'liderturizm.com.tr',
+
+    // US Stocks & ETFs
+    AAPL: 'apple.com',
+    MSFT: 'microsoft.com',
+    TSLA: 'tesla.com',
+    NVDA: 'nvidia.com',
+    AMZN: 'amazon.com',
+    GOOGL: 'google.com',
+    GOOG: 'google.com',
+    META: 'meta.com',
+    NFLX: 'netflix.com',
+    SPY: 'ssga.com',
+    QQQ: 'invesco.com',
+    VOO: 'vanguard.com',
+    ARKK: 'ark-funds.com',
+    GLD: 'spdrgoldshares.com',
+    TLT: 'ishares.com',
+
+    // Turkish Funds (TEFAS)
+    AFT: 'akportfoy.com.tr',
+    MAC: 'marmaracapital.com.tr',
+    TTE: 'isportfoy.com.tr',
+    YAS: 'yapikrediportfoy.com.tr',
+    IPJ: 'isportfoy.com.tr',
+    GMR: 'inveoportfoy.com.tr',
+    IIH: 'istanbulportfoy.com',
+    PNU: 'pusulaportfoy.com.tr',
+    PRY: 'pusulaportfoy.com.tr',
+    TP2: 'teraportfoy.com.tr',
+  };
+
+  const domain = domainMap[s];
+  if (domain) {
+    return `https://www.google.com/s2/favicons?sz=64&domain=${domain}`;
+  }
+  return `https://www.google.com/s2/favicons?sz=64&domain=${s.toLowerCase()}.com.tr`;
+};
+
+const StockLogo: React.FC<{ symbol: string; profitLoss: number }> = ({ symbol, profitLoss }) => {
+  const [imgError, setImgError] = React.useState(false);
+  const url = getStockLogoUrl(symbol);
+
+  if (imgError) {
+    return (
+      <div
+        style={{
+          backgroundColor: profitLoss >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+          color: profitLoss >= 0 ? '#10b981' : '#ef4444',
+          width: '28px',
+          height: '28px',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 800,
+          fontSize: '0.62rem',
+          flexShrink: 0
+        }}
+      >
+        {symbol.slice(0, 3)}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        width: '28px',
+        height: '28px',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(255, 255, 255, 0.05)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        flexShrink: 0
+      }}
+    >
+      <img
+        src={url}
+        alt={symbol}
+        style={{ width: '18px', height: '18px', objectFit: 'contain' }}
+        onError={() => setImgError(true)}
+      />
+    </div>
+  );
+};
 
 interface Wallet {
   id: string;
@@ -111,6 +252,7 @@ export const Borsa: React.FC<BorsaProps> = ({
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   // Sync default symbol when active market changes
   React.useEffect(() => {
@@ -142,6 +284,10 @@ export const Borsa: React.FC<BorsaProps> = ({
   const portfolio = useMemo(() => {
     let totalStockVal = 0;
     let totalInvested = 0;
+    
+    const totalCash = wallets
+      .filter(w => activeMarket === 'USD' ? w.type === 'Borsa_USD' : w.type === 'Borsa_TRY')
+      .reduce((sum, w) => sum + (w.cash_balance ?? w.balance), 0);
     
     const items = userStocks
       .map(stock => {
@@ -185,6 +331,7 @@ export const Borsa: React.FC<BorsaProps> = ({
       totalInvested,
       totalProfitLoss,
       totalProfitLossPercent,
+      totalCash,
     };
   }, [userStocks, wallets, stockPrices, activeMarket]);
 
@@ -360,10 +507,11 @@ export const Borsa: React.FC<BorsaProps> = ({
     }
   };
 
-  const formatCurrency = (val: number, walletType?: string) => {
+  const formatCurrency = (val: number, walletType?: string, symbol?: string) => {
     const isUSD = walletType === 'Borsa_USD' || walletType === 'Dolar' || (walletType === undefined && activeMarket === 'USD');
+    const isFund = symbol && TRY_FUNDS.includes(symbol.toUpperCase());
     const isSmallFund = val > 0 && val < 1;
-    const decimals = isSmallFund ? 6 : 2;
+    const decimals = isFund || isSmallFund ? 6 : 2;
     return new Intl.NumberFormat(isUSD ? 'en-US' : 'tr-TR', {
       style: 'currency',
       currency: isUSD ? 'USD' : 'TRY',
@@ -385,7 +533,7 @@ export const Borsa: React.FC<BorsaProps> = ({
               const livePrice = quote ? quote.price : 0;
               return (
                 <option key={s} value={s}>
-                  {s} - Güncel: {formatCurrency(livePrice, 'Borsa_TRY')}
+                  {s} - Güncel: {formatCurrency(livePrice, 'Borsa_TRY', s)}
                 </option>
               );
             })}
@@ -396,7 +544,7 @@ export const Borsa: React.FC<BorsaProps> = ({
               const livePrice = quote ? quote.price : 0;
               return (
                 <option key={s} value={s}>
-                  {s} - Güncel: {formatCurrency(livePrice, 'Borsa_TRY')}
+                  {s} - Güncel: {formatCurrency(livePrice, 'Borsa_TRY', s)}
                 </option>
               );
             })}
@@ -414,7 +562,7 @@ export const Borsa: React.FC<BorsaProps> = ({
               const livePrice = quote ? quote.price : 0;
               return (
                 <option key={s} value={s}>
-                  {s} - Güncel: {formatCurrency(livePrice, 'Borsa_USD')}
+                  {s} - Güncel: {formatCurrency(livePrice, 'Borsa_USD', s)}
                 </option>
               );
             })}
@@ -425,7 +573,7 @@ export const Borsa: React.FC<BorsaProps> = ({
               const livePrice = quote ? quote.price : 0;
               return (
                 <option key={s} value={s}>
-                  {s} - Güncel: {formatCurrency(livePrice, 'Borsa_USD')}
+                  {s} - Güncel: {formatCurrency(livePrice, 'Borsa_USD', s)}
                 </option>
               );
             })}
@@ -632,6 +780,8 @@ export const Borsa: React.FC<BorsaProps> = ({
           </div>
           <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px', fontWeight: 600 }}>
             Toplam Yatırılan: {formatCurrency(portfolio.totalInvested)}
+            <span style={{ margin: '0 6px' }}>•</span>
+            Harcayabilir: <span style={{ color: 'var(--text-bright)' }}>{formatCurrency(portfolio.totalCash)}</span>
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -674,7 +824,7 @@ export const Borsa: React.FC<BorsaProps> = ({
       <h3 style={{ fontSize: '0.95rem', marginBottom: '12px', paddingLeft: '4px', color: 'var(--text-bright)' }}>
         Portföy Hisselerim
       </h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '340px', overflowY: 'auto', paddingRight: '4px', marginBottom: '24px' }}>
         {portfolio.items.length > 0 ? (
           portfolio.items.map((item) => (
             <div
@@ -684,47 +834,33 @@ export const Borsa: React.FC<BorsaProps> = ({
                 cursor: 'default',
                 background: 'rgba(255, 255, 255, 0.01)',
                 borderColor: 'rgba(255, 255, 255, 0.03)',
-                padding: '12px 14px',
+                padding: '4px 6px',
               }}
             >
-              <div className="tx-left">
-                <div
-                  style={{
-                    backgroundColor: item.profitLoss >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                    color: item.profitLoss >= 0 ? '#10b981' : '#ef4444',
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 800,
-                    fontSize: '0.75rem',
-                  }}
-                >
-                  {item.symbol}
-                </div>
+              <div className="tx-left" style={{ gap: '8px' }}>
+                <StockLogo symbol={item.symbol} profitLoss={item.profitLoss} />
                 <div className="tx-details">
-                  <span className="tx-description" style={{ fontSize: '0.85rem', fontWeight: 700 }}>
-                    {item.shares_count} Adet
+                  <span className="tx-description" style={{ fontSize: '0.7rem', fontWeight: 700 }}>
+                    <span style={{ color: 'var(--text-bright)', marginRight: '6px' }}>{item.symbol}</span>
+                    <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{item.shares_count} Adet</span>
                   </span>
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '2px', fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                    <span>Maliyet: {formatCurrency(Number(item.average_cost), item.walletType)}</span>
+                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginTop: '1px', fontSize: '0.55rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                    <span>Maliyet: {formatCurrency(Number(item.average_cost), item.walletType, item.symbol)}</span>
                     <span>•</span>
-                    <span>Güncel: {formatCurrency(item.currentPrice, item.walletType)}</span>
+                    <span>Güncel: {formatCurrency(item.currentPrice, item.walletType, item.symbol)}</span>
                   </div>
                 </div>
               </div>
               <div className="tx-right" style={{ alignItems: 'flex-end' }}>
-                <span className="tx-amount" style={{ fontSize: '0.85rem', color: 'var(--text-bright)' }}>
-                  {formatCurrency(item.currentValue, item.walletType)}
+                <span className="tx-amount" style={{ fontSize: '0.7rem', color: 'var(--text-bright)' }}>
+                  {formatCurrency(item.currentValue, item.walletType, item.symbol)}
                 </span>
                 <span
                   style={{
-                    fontSize: '0.68rem',
+                    fontSize: '0.55rem',
                     fontWeight: 700,
                     color: item.profitLoss >= 0 ? '#10b981' : '#ef4444',
-                    marginTop: '2px',
+                    marginTop: '1px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '2px',
@@ -800,7 +936,7 @@ export const Borsa: React.FC<BorsaProps> = ({
             >
               <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-bright)' }}>{symbol}</div>
               <div style={{ fontSize: '0.85rem', fontWeight: 700, margin: '4px 0' }}>
-                {price > 0 ? `${price.toFixed(2)} ₺` : 'Yükleniyor...'}
+                {price > 0 ? formatCurrency(price, activeMarket === 'TRY' ? 'Borsa_TRY' : 'Borsa_USD', symbol) : 'Yükleniyor...'}
               </div>
               {price > 0 ? (
                 <span
@@ -825,83 +961,114 @@ export const Borsa: React.FC<BorsaProps> = ({
       </div>
 
       {/* Borsa Transaction History */}
-      <h3 style={{ fontSize: '0.95rem', marginBottom: '12px', paddingLeft: '4px', color: 'var(--text-bright)' }}>
-        Borsa İşlem Geçmişi
-      </h3>
-      <div className="tx-feed" style={{ marginBottom: '24px' }}>
-        {borsaTransactions.length > 0 ? (
-          borsaTransactions.map((tx) => {
-            const w = wallets.find((wallet) => wallet.id === tx.wallet_id);
-            const isBuy = tx.description.includes('Alımı') || tx.description.toLowerCase().includes('al');
-            
-            return (
-              <div
-                key={tx.id}
-                className="tx-item"
-                style={{
-                  cursor: 'default',
-                  background: 'rgba(255, 255, 255, 0.01)',
-                  borderColor: 'rgba(255, 255, 255, 0.03)',
-                  padding: '12px 14px',
-                }}
-              >
-                <div className="tx-left">
-                  <div
-                    style={{
-                      backgroundColor: isBuy ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                      color: isBuy ? '#f87171' : '#10b981',
-                      padding: '4px 8px',
-                      borderRadius: '6px',
-                      fontSize: '0.65rem',
-                      fontWeight: 800,
-                      textTransform: 'uppercase',
-                      textAlign: 'center',
-                      minWidth: '50px',
-                    }}
-                  >
-                    {isBuy ? 'ALIM' : 'SATIM'}
-                  </div>
-                  <div className="tx-details">
-                    <span className="tx-description" style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                      {tx.description}
-                    </span>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '2px', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                      <span>
-                        {new Date(tx.date).toLocaleDateString('tr-TR', {
-                          day: 'numeric',
-                          month: 'long',
-                        })}
+      <div
+        onClick={() => setShowHistory(!showHistory)}
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          cursor: 'pointer',
+          marginBottom: '12px',
+          padding: '8px 10px',
+          borderRadius: '8px',
+          background: 'rgba(255, 255, 255, 0.015)',
+          border: '1px solid rgba(255, 255, 255, 0.04)',
+          transition: 'all 0.2s',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.015)';
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.04)';
+        }}
+      >
+        <h3 style={{ fontSize: '0.9rem', margin: 0, color: 'var(--text-bright)', fontWeight: 700 }}>
+          Borsa İşlem Geçmişi
+        </h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 600 }}>
+          <span>{showHistory ? 'Gizle' : 'Göster'}</span>
+          {showHistory ? <FiChevronUp /> : <FiChevronDown />}
+        </div>
+      </div>
+
+      {showHistory && (
+        <div className="tx-feed" style={{ marginBottom: '24px' }}>
+          {borsaTransactions.length > 0 ? (
+            borsaTransactions.map((tx) => {
+              const w = wallets.find((wallet) => wallet.id === tx.wallet_id);
+              const isBuy = tx.description.includes('Alımı') || tx.description.toLowerCase().includes('al');
+              
+              return (
+                <div
+                  key={tx.id}
+                  className="tx-item"
+                  style={{
+                    cursor: 'default',
+                    background: 'rgba(255, 255, 255, 0.01)',
+                    borderColor: 'rgba(255, 255, 255, 0.03)',
+                    padding: '10px 12px',
+                  }}
+                >
+                  <div className="tx-left">
+                    <div
+                      style={{
+                        backgroundColor: isBuy ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                        color: isBuy ? '#f87171' : '#10b981',
+                        padding: '3px 6px',
+                        borderRadius: '6px',
+                        fontSize: '0.62rem',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        textAlign: 'center',
+                        minWidth: '50px',
+                      }}
+                    >
+                      {isBuy ? 'ALIM' : 'SATIM'}
+                    </div>
+                    <div className="tx-details">
+                      <span className="tx-description" style={{ fontSize: '0.8rem', fontWeight: 600 }}>
+                        {tx.description}
                       </span>
-                      <span>•</span>
-                      <span style={{ color: w?.color, fontWeight: 700 }}>
-                        {w?.name || 'Borsa Hesabı'}
-                      </span>
-                      {tx.time_range && (
-                        <>
-                          <span>•</span>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                            <FiClock /> {tx.time_range}
-                          </span>
-                        </>
-                      )}
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '2px', fontSize: '0.62rem', color: 'var(--text-muted)' }}>
+                        <span>
+                          {new Date(tx.date).toLocaleDateString('tr-TR', {
+                            day: 'numeric',
+                            month: 'long',
+                          })}
+                        </span>
+                        <span>•</span>
+                        <span style={{ color: w?.color, fontWeight: 700 }}>
+                          {w?.name || 'Borsa Hesabı'}
+                        </span>
+                        {tx.time_range && (
+                          <>
+                            <span>•</span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                              <FiClock /> {tx.time_range}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  <div className="tx-right" style={{ alignItems: 'flex-end' }}>
+                    <span className={`tx-amount ${isBuy ? 'gider' : 'gelir'}`} style={{ fontSize: '0.8rem', fontWeight: 700 }}>
+                      {isBuy ? '-' : '+'}
+                      {formatCurrency(tx.amount, w?.type)}
+                    </span>
+                  </div>
                 </div>
-                <div className="tx-right" style={{ alignItems: 'flex-end' }}>
-                  <span className={`tx-amount ${isBuy ? 'gider' : 'gelir'}`} style={{ fontSize: '0.85rem', fontWeight: 700 }}>
-                    {isBuy ? '-' : '+'}
-                    {formatCurrency(tx.amount, w?.type)}
-                  </span>
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div style={{ textAlign: 'center', padding: '24px 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            Henüz bir borsa işlemi gerçekleştirilmedi.
-          </div>
-        )}
-      </div>
+              );
+            })
+          ) : (
+            <div style={{ textAlign: 'center', padding: '24px 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              Henüz bir borsa işlemi gerçekleştirilmedi.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

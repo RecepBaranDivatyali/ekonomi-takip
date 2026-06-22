@@ -364,7 +364,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
       setShowAddForm(false);
       onRefreshData();
     } catch (err: any) {
-      setErrorMsg(err.message || 'Borç kaydı eklenirken hata oluştu.');
+      setErrorMsg(err.message || 'Gelecek işlem eklenirken hata oluştu.');
     } finally {
       setLoading(false);
     }
@@ -399,7 +399,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
         wallet_id: debt.wallet_id,
         category_id: debt.category_id || null,
         amount: numAmount,
-        description: `${debt.name} - Borç Kapanışı (${debt.type})`,
+        description: `${debt.name} - Gelecek İşlem Kapanışı (${debt.type})`,
         date: new Date().toISOString().split('T')[0],
         time_range: new Date().toTimeString().slice(0, 5),
       });
@@ -431,7 +431,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
       setExpandedDebtId(null);
       onRefreshData();
     } catch (err: any) {
-      alert(err.message || 'Borç silinirken hata oluştu.');
+      alert(err.message || 'Gelecek işlem silinirken hata oluştu.');
     }
   };
 
@@ -1363,7 +1363,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
                     <div className="debt-body" style={{ padding: '14px', borderTop: '1px solid var(--border-color)', background: 'rgba(255, 255, 255, 0.005)', fontSize: '0.78rem' }}>
                       <div className="debt-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <span style={{ color: 'var(--text-muted)' }}>Tür:</span>
-                        <span style={{ fontWeight: 600, color: 'var(--text-bright)' }}>{debt.type === 'Alınacak' ? 'Gelecek Gelir (Alacak)' : 'Gelecek Gider (Borç)'}</span>
+                        <span style={{ fontWeight: 600, color: 'var(--text-bright)' }}>{debt.type === 'Alınacak' ? 'Gelir' : 'Gider'}</span>
                       </div>
                       <div className="debt-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <span style={{ color: 'var(--text-muted)' }}>İlişkili Hesap:</span>

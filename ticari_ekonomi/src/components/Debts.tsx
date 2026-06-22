@@ -229,7 +229,7 @@ export const Debts: React.FC<DebtsProps> = ({
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h2 style={{ fontSize: '1.25rem', margin: 0, textAlign: 'left' }}>
-          Borçlar & Alacaklar
+          Gelecek İşlemler
         </h2>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
@@ -306,7 +306,7 @@ export const Debts: React.FC<DebtsProps> = ({
                   <div className="debt-body">
                     <div className="debt-row">
                       <span>Tür:</span>
-                      <span>{debt.type} (Borç)</span>
+                      <span>{debt.type === 'Verilecek' ? 'Gider' : 'Gelir'}</span>
                     </div>
                     <div className="debt-row">
                       <span>İlişkili Hesap:</span>
@@ -381,23 +381,23 @@ export const Debts: React.FC<DebtsProps> = ({
       {showAddForm && (
         <div className="card muted" style={{ textAlign: 'left' }}>
           <div className="card-title" style={{ marginBottom: '14px' }}>
-            Yeni Borç / Alacak Ekle
+            Yeni Gelecek İşlem Ekle
           </div>
           <form onSubmit={handleAddDebt}>
             <div className="tab-switch">
               <button
                 type="button"
-                className={`tab-switch-btn ${debtType === 'Alınacak' ? 'active gelir' : ''}`}
-                onClick={() => setDebtType('Alınacak')}
-              >
-                Alacak (Bana Ödenecek)
-              </button>
-              <button
-                type="button"
                 className={`tab-switch-btn ${debtType === 'Verilecek' ? 'active gider' : ''}`}
                 onClick={() => setDebtType('Verilecek')}
               >
-                Borç (Ben Ödeyeceğim)
+                Gider
+              </button>
+              <button
+                type="button"
+                className={`tab-switch-btn ${debtType === 'Alınacak' ? 'active gelir' : ''}`}
+                onClick={() => setDebtType('Alınacak')}
+              >
+                Gelir
               </button>
             </div>
 
