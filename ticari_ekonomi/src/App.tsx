@@ -8,7 +8,7 @@ import { Wallets } from './components/Wallets';
 import { Categories } from './components/Categories';
 import { Tags } from './components/Tags';
 import { Borsa } from './components/Borsa';
-import { fetchExchangeRates, DEFAULT_RATES } from './services/currencyService';
+import { fetchExchangeRates, fetchLiveStockPrices, DEFAULT_RATES } from './services/currencyService';
 import type { ExchangeRates } from './services/currencyService';
 import { FiAlertCircle } from 'react-icons/fi';
 import './App.css';
@@ -88,31 +88,33 @@ function App() {
   const [debts, setDebts] = useState<Debt[]>([]);
   const [userStocks, setUserStocks] = useState<UserStock[]>([]);
 
-  // Simulated live stock prices
-  const [stockPrices, setStockPrices] = useState<{ [key: string]: number }>({
-    THY: 312.50,
-    BIMAS: 418.20,
-    EREGL: 51.90,
-    ASELS: 63.85,
-    TUPRS: 164.50,
-    KCHOL: 208.70,
-    YKBNK: 28.10,
-    SAHOL: 84.60,
-    SASA: 38.30
+  // Simulated & live BIST stock prices and changes
+  const [stockPrices, setStockPrices] = useState<{ [key: string]: { price: number; change: number } }>({
+    THYAO: { price: 312.50, change: 0.25 },
+    BIMAS: { price: 418.20, change: -0.10 },
+    EREGL: { price: 51.90, change: 1.20 },
+    ASELS: { price: 63.85, change: -0.05 },
+    TUPRS: { price: 164.50, change: 0.80 },
+    KCHOL: { price: 208.70, change: -1.50 },
+    YKBNK: { price: 28.10, change: 0.15 },
+    SAHOL: { price: 84.60, change: 2.10 },
+    SASA: { price: 38.30, change: -0.90 }
   });
 
-  // Stock price simulator (runs every 5 seconds with small fluctuations)
+  // Fetch and update live stock prices (with 30-second polling)
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStockPrices(prev => {
-        const next = { ...prev };
-        Object.keys(next).forEach(symbol => {
-          const changePercent = (Math.random() - 0.5) * 0.006; // max +/- 0.3% change
-          next[symbol] = Number((next[symbol] * (1 + changePercent)).toFixed(2));
-        });
-        return next;
-      });
-    }, 5000);
+    const updateStockPrices = async () => {
+      try {
+        const prices = await fetchLiveStockPrices();
+        setStockPrices(prev => ({ ...prev, ...prices }));
+      } catch (error) {
+        console.error('Failed to fetch live stock prices:', error);
+      }
+    };
+
+    updateStockPrices(); // Initial fetch
+    const interval = setInterval(updateStockPrices, 30000); // Poll every 30 seconds
+
     return () => clearInterval(interval);
   }, []);
 
@@ -376,7 +378,9 @@ function App() {
       if (w.type === 'Borsa_TRY' || w.type === 'Borsa_USD') {
         const stocks = userStocks.filter(s => s.wallet_id === w.id);
         const stockVal = stocks.reduce((sum, s) => {
-          const price = stockPrices[s.symbol] || Number(s.average_cost) || 0;
+          const sym = s.symbol === 'THY' ? 'THYAO' : s.symbol.toUpperCase();
+          const quote = stockPrices[sym];
+          const price = quote ? quote.price : (Number(s.average_cost) || 0);
           return sum + Number(s.shares_count) * price;
         }, 0);
         return {

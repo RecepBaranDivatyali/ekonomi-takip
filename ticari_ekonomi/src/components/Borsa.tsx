@@ -33,13 +33,25 @@ interface Transaction {
 interface BorsaProps {
   wallets: Wallet[];
   userStocks: UserStock[];
-  stockPrices: { [key: string]: number };
+  stockPrices: { [key: string]: { price: number; change: number } };
   transactions: Transaction[];
   onRefreshData: () => void;
   userId: string;
 }
 
-const STOCKS_LIST = ['THY', 'BIMAS', 'EREGL', 'ASELS', 'TUPRS', 'KCHOL', 'YKBNK', 'SAHOL', 'SASA'];
+const STOCKS_LIST = [
+  'AEFES', 'AGHOL', 'AKBNK', 'AKSA', 'AKSEN', 'ALARK', 'ALTNY', 'ANHYT', 'ANSGR', 'ARCLK', 
+  'ASELS', 'ASTOR', 'BERA', 'BIMAS', 'BRSAN', 'BRYAT', 'BSOKE', 'BTCIM', 'CANTE', 'CCOLA', 
+  'CIMSA', 'CLEBI', 'CVKMD', 'CWENE', 'DAPGM', 'DOAS', 'DOHOL', 'DSTKF', 'ECILC', 'EFOR', 
+  'EGEEN', 'EKGYO', 'ENERY', 'ENJSA', 'ENKAI', 'EREGL', 'EUPWR', 'FENER', 'FROTO', 'GARAN', 
+  'GENIL', 'GESAN', 'GLRMK', 'GRSEL', 'GRTHO', 'GSRAY', 'GUBRF', 'HALKB', 'HEKTS', 'IEYHO', 
+  'ISCTR', 'ISMEN', 'KCAER', 'KCHOL', 'KONTR', 'KONYA', 'KRDMD', 'KTLEV', 'KUYAS', 'MAGEN', 
+  'MAVI', 'MGROS', 'MIATK', 'MPARK', 'OBAMS', 'ODAS', 'OTKAR', 'OYAKC', 'PAHOL', 'PASEU', 
+  'PETKM', 'PGSUS', 'RALYH', 'REEDR', 'RYGYO', 'SAHOL', 'SARKY', 'SASA', 'SELEC', 'SISE', 
+  'SKBNK', 'SOKM', 'TABGD', 'TAVHL', 'TCELL', 'THYAO', 'TKFEN', 'TOASO', 'TRALT', 'TRENJ', 
+  'TRMET', 'TSKB', 'TTKOM', 'TTRAK', 'TUKAS', 'TUPRS', 'TUREX', 'TURSG', 'ULKER', 'VAKBN', 
+  'VESTL', 'YKBNK', 'ZOREN'
+];
 
 export const Borsa: React.FC<BorsaProps> = ({
   wallets,
@@ -67,15 +79,20 @@ export const Borsa: React.FC<BorsaProps> = ({
   const [walletId, setWalletId] = useState(borsaWallets[0]?.id || '');
   const [symbol, setSymbol] = useState(STOCKS_LIST[0]);
   const [sharesCount, setSharesCount] = useState('');
-  const [price, setPrice] = useState(String(stockPrices[STOCKS_LIST[0]] || 100));
+  const [price, setPrice] = useState(() => {
+    const sym = STOCKS_LIST[0];
+    const quote = stockPrices[sym];
+    return String(quote ? quote.price : 100);
+  });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
 
   // Sync selected stock price when symbol changes
   React.useEffect(() => {
-    if (stockPrices[symbol]) {
-      setPrice(String(stockPrices[symbol]));
+    const sym = symbol === 'THY' ? 'THYAO' : symbol.toUpperCase();
+    if (stockPrices[sym]) {
+      setPrice(String(stockPrices[sym].price));
     }
   }, [symbol, stockPrices]);
 
@@ -92,7 +109,9 @@ export const Borsa: React.FC<BorsaProps> = ({
     let totalInvested = 0;
     const items = userStocks.map(stock => {
       const w = wallets.find(w => w.id === stock.wallet_id);
-      const currentPrice = stockPrices[stock.symbol] || stock.average_cost || 0;
+      const sym = stock.symbol === 'THY' ? 'THYAO' : stock.symbol.toUpperCase();
+      const quote = stockPrices[sym];
+      const currentPrice = quote ? quote.price : (stock.average_cost || 0);
       const currentValue = Number(stock.shares_count) * currentPrice;
       const totalCost = Number(stock.shares_count) * Number(stock.average_cost);
       const profitLoss = currentValue - totalCost;
@@ -124,6 +143,17 @@ export const Borsa: React.FC<BorsaProps> = ({
       totalProfitLossPercent,
     };
   }, [userStocks, wallets, stockPrices]);
+
+  // Unique symbols owned by user to display in watchlist, falling back to popular ones if portfolio is empty
+  const watchlistSymbols = useMemo(() => {
+    if (userStocks.length > 0) {
+      const symbols = Array.from(
+        new Set(userStocks.map(s => s.symbol === 'THY' ? 'THYAO' : s.symbol.toUpperCase()))
+      );
+      return symbols;
+    }
+    return ['THYAO', 'BIMAS', 'EREGL', 'AKBNK', 'KCHOL', 'TUPRS'];
+  }, [userStocks]);
 
   // Selected wallet summary
   const activeBorsaWallet = useMemo(() => {
@@ -170,8 +200,12 @@ export const Borsa: React.FC<BorsaProps> = ({
           .eq('id', wallet.id);
         if (wError) throw wError;
 
-        // 2. Fetch existing holdings
-        const existingStock = userStocks.find(s => s.wallet_id === wallet.id && s.symbol === symbol);
+        // 2. Fetch existing holdings (with symbol normalization)
+        const existingStock = userStocks.find(s => {
+          const sSym = s.symbol === 'THY' ? 'THYAO' : s.symbol.toUpperCase();
+          const targetSym = symbol === 'THY' ? 'THYAO' : symbol.toUpperCase();
+          return s.wallet_id === wallet.id && sSym === targetSym;
+        });
 
         if (existingStock) {
           // Average Cost calculation
@@ -215,7 +249,11 @@ export const Borsa: React.FC<BorsaProps> = ({
 
       } else {
         // SELL OPERATION
-        const existingStock = userStocks.find(s => s.wallet_id === wallet.id && s.symbol === symbol);
+        const existingStock = userStocks.find(s => {
+          const sSym = s.symbol === 'THY' ? 'THYAO' : s.symbol.toUpperCase();
+          const targetSym = symbol === 'THY' ? 'THYAO' : symbol.toUpperCase();
+          return s.wallet_id === wallet.id && sSym === targetSym;
+        });
         if (!existingStock || Number(existingStock.shares_count) < count) {
           throw new Error(`Portföyünüzde yeterli ${symbol} hissesi bulunmuyor. Mevcut: ${existingStock ? existingStock.shares_count : 0} Adet`);
         }
@@ -377,11 +415,15 @@ export const Borsa: React.FC<BorsaProps> = ({
                 required
                 style={{ background: '#121826' }}
               >
-                {STOCKS_LIST.map((s) => (
-                  <option key={s} value={s}>
-                    {s} - Güncel: {formatCurrency(stockPrices[s] || 0, activeBorsaWallet?.type)}
-                  </option>
-                ))}
+                {STOCKS_LIST.map((s) => {
+                  const quote = stockPrices[s];
+                  const livePrice = quote ? quote.price : 0;
+                  return (
+                    <option key={s} value={s}>
+                      {s} - Güncel: {formatCurrency(livePrice, activeBorsaWallet?.type)}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -570,6 +612,24 @@ export const Borsa: React.FC<BorsaProps> = ({
       <h3 style={{ fontSize: '0.95rem', marginBottom: '12px', paddingLeft: '4px', color: 'var(--text-bright)' }}>
         Canlı Hisse Fiyatları (BIST)
       </h3>
+      {userStocks.length === 0 && (
+        <div 
+          style={{ 
+            background: 'rgba(59, 130, 246, 0.06)',
+            borderColor: 'rgba(59, 130, 246, 0.15)',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderRadius: '12px',
+            padding: '12px',
+            marginBottom: '14px',
+            fontSize: '0.78rem',
+            color: '#93c5fd',
+            lineHeight: '1.4'
+          }}
+        >
+          💡 <strong>Bilgi:</strong> Portföyünüz henüz boş olduğu için popüler hisse senetleri listelenmektedir. Kendi hisselerinizi satın aldıkça burada sadece kendi hisseleriniz listelenecektir.
+        </div>
+      )}
       <div
         style={{
           display: 'grid',
@@ -578,11 +638,11 @@ export const Borsa: React.FC<BorsaProps> = ({
           marginBottom: '24px',
         }}
       >
-        {STOCKS_LIST.map((symbol) => {
-          const price = stockPrices[symbol] || 0;
-          // Random mock daily changes based on stock price
-          const mockChange = Number(((price % 10) - 5).toFixed(2));
-          const isUp = mockChange >= 0;
+        {watchlistSymbols.map((symbol) => {
+          const quote = stockPrices[symbol];
+          const price = quote ? quote.price : 0;
+          const change = quote ? quote.change : 0;
+          const isUp = change >= 0;
 
           return (
             <div
@@ -605,21 +665,25 @@ export const Borsa: React.FC<BorsaProps> = ({
             >
               <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-bright)' }}>{symbol}</div>
               <div style={{ fontSize: '0.85rem', fontWeight: 700, margin: '4px 0' }}>
-                {price.toFixed(2)} ₺
+                {price > 0 ? `${price.toFixed(2)} ₺` : 'Yükleniyor...'}
               </div>
-              <span
-                style={{
-                  fontSize: '0.62rem',
-                  fontWeight: 700,
-                  color: isUp ? '#10b981' : '#ef4444',
-                  backgroundColor: isUp ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                }}
-              >
-                {isUp ? '▲' : '▼'} {isUp ? '+' : ''}
-                {mockChange}%
-              </span>
+              {price > 0 ? (
+                <span
+                  style={{
+                    fontSize: '0.62rem',
+                    fontWeight: 700,
+                    color: isUp ? '#10b981' : '#ef4444',
+                    backgroundColor: isUp ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                  }}
+                >
+                  {isUp ? '▲' : '▼'} {isUp ? '+' : ''}
+                  {change.toFixed(2)}%
+                </span>
+              ) : (
+                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>-</span>
+              )}
             </div>
           );
         })}

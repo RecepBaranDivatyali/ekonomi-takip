@@ -69,3 +69,33 @@ export async function fetchExchangeRates(): Promise<ExchangeRates> {
   console.log('Successfully fetched live rates:', rates);
   return rates;
 }
+
+export interface StockQuote {
+  price: number;
+  change: number;
+}
+
+export async function fetchLiveStockPrices(): Promise<{ [key: string]: StockQuote }> {
+  const response = await fetch('https://doviz-api.onrender.com/api/borsa');
+  if (!response.ok) {
+    throw new Error(`Borsa API HTTP error! status: ${response.status}`);
+  }
+  const result = await response.json();
+  if (!result.success || !Array.isArray(result.data)) {
+    throw new Error('Invalid Borsa API response structure');
+  }
+
+  const prices: { [key: string]: StockQuote } = {};
+  result.data.forEach((item: any) => {
+    if (item.name) {
+      const priceVal = parseTurkishNumber(item.price);
+      const changeVal = parseTurkishNumber(item.change);
+      prices[item.name.toUpperCase()] = {
+        price: priceVal,
+        change: changeVal
+      };
+    }
+  });
+
+  return prices;
+}
