@@ -286,40 +286,51 @@ export const DovizMaden: React.FC<DovizMadenProps> = ({ wallets, rates, currency
               padding: '6px 12px',
               fontSize: '0.8rem',
               width: 'auto',
+              margin: 0,
+              background: showForm ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+              borderColor: showForm ? 'rgba(239, 68, 68, 0.3)' : 'rgba(59, 130, 246, 0.3)',
+              color: showForm ? '#f87171' : '#60a5fa',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
               borderRadius: '8px',
+              fontWeight: 700,
+              cursor: 'pointer'
             }}
           >
-            {showForm ? 'İptal Et' : '+ İşlem Ekle'}
+            {showForm ? 'Kapat' : '+ İşlem Ekle'}
           </button>
         )}
       </div>
 
       {/* Transaction Modal (Inline) */}
       {showForm && (
-        <div className="card" style={{ marginBottom: '20px', border: '1px solid var(--accent-color)' }}>
-          <h3 style={{ fontSize: '1rem', marginBottom: '16px' }}>Döviz/Maden İşlemi</h3>
+        <div className="card muted" style={{ textAlign: 'left', marginBottom: '24px' }}>
+          <div className="card-title" style={{ marginBottom: '14px' }}>
+            Yeni İşlem Ekle
+          </div>
           
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+          <div className="tab-switch" style={{ marginBottom: '16px' }}>
             <button
-              className={`btn ${tradeType === 'AL' ? '' : 'outline'}`}
-              style={{ flex: 1, backgroundColor: tradeType === 'AL' ? '#10b981' : '' }}
+              type="button"
+              className={`tab-switch-btn ${tradeType === 'AL' ? 'active gelir' : ''}`}
               onClick={() => setTradeType('AL')}
             >
-              AL
+              Yatırım Al
             </button>
             <button
-              className={`btn ${tradeType === 'SAT' ? '' : 'outline'}`}
-              style={{ flex: 1, backgroundColor: tradeType === 'SAT' ? '#ef4444' : '' }}
+              type="button"
+              className={`tab-switch-btn ${tradeType === 'SAT' ? 'active gider' : ''}`}
               onClick={() => setTradeType('SAT')}
             >
-              SAT
+              Yatırım Sat
             </button>
           </div>
 
           <form onSubmit={handleTradeSubmit}>
             <div className="form-group">
-              <label>İşlem Yapılacak Varlık</label>
-              <select value={targetWalletId} onChange={(e) => handleTargetWalletChange(e.target.value)} required>
+              <label className="form-label">İşlem Yapılacak Varlık</label>
+              <select className="form-control" value={targetWalletId} onChange={(e) => handleTargetWalletChange(e.target.value)} required style={{ background: '#121826' }}>
                 <option value="" disabled>Seçiniz</option>
                 {myWallets.map(w => (
                   <option key={w.id} value={w.id}>{w.name} ({formatNative(w.balance, w.type)})</option>
@@ -327,23 +338,25 @@ export const DovizMaden: React.FC<DovizMadenProps> = ({ wallets, rates, currency
               </select>
             </div>
 
-            <div className="form-group" style={{ display: 'flex', gap: '10px' }}>
-              <div style={{ flex: 1 }}>
-                <label>Miktar</label>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label className="form-label">Miktar</label>
                 <input
                   type="number"
                   step="any"
-                  placeholder="Ör: 1.5"
+                  className="form-control"
+                  placeholder="0.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   required
                 />
               </div>
-              <div style={{ flex: 1 }}>
-                <label>İşlem Kuru</label>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label className="form-label">İşlem Kuru</label>
                 <input
                   type="number"
                   step="any"
+                  className="form-control"
                   placeholder="Kur fiyatı"
                   value={customRate}
                   onChange={(e) => setCustomRate(e.target.value)}
@@ -353,8 +366,8 @@ export const DovizMaden: React.FC<DovizMadenProps> = ({ wallets, rates, currency
             </div>
 
             <div className="form-group">
-              <label>{tradeType === 'AL' ? 'Ödemenin Çekileceği Hesap' : 'Paranın Yatacağı Hesap'}</label>
-              <select value={sourceWalletId} onChange={(e) => setSourceWalletId(e.target.value)}>
+              <label className="form-label">{tradeType === 'AL' ? 'Ödemenin Çekileceği Hesap' : 'Paranın Yatacağı Hesap'}</label>
+              <select className="form-control" value={sourceWalletId} onChange={(e) => setSourceWalletId(e.target.value)} style={{ background: '#121826' }}>
                 <option value="other">Diğer (Banka Dışı / Hediye)</option>
                 {vadesizWallets.map(w => (
                   <option key={w.id} value={w.id}>{w.name} ({formatTL(w.balance)})</option>
@@ -376,13 +389,13 @@ export const DovizMaden: React.FC<DovizMadenProps> = ({ wallets, rates, currency
             )}
 
             {errorMsg && (
-              <div style={{ color: '#ef4444', fontSize: '0.8rem', marginBottom: '12px', textAlign: 'center' }}>
-                {errorMsg}
+              <div className="toast error" style={{ position: 'static', marginBottom: '16px' }}>
+                <span>{errorMsg}</span>
               </div>
             )}
 
-            <button type="submit" className="btn" style={{ width: '100%' }} disabled={loading}>
-              {loading ? 'İşleniyor...' : 'Onayla'}
+            <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
+              <span>{loading ? 'İşleniyor...' : 'Onayla'}</span>
             </button>
           </form>
         </div>

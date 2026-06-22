@@ -119,10 +119,19 @@ body {
   -webkit-backdrop-filter: var(--glass-blur);
   border-top: 1px solid var(--glass-border);
   display: flex;
-  justify-content: space-around;
+  justify-content: flex-start;
   align-items: center;
   padding: 0 10px;
   z-index: 100;
+  overflow-x: auto;
+  gap: 8px;
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.bottom-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-item {
@@ -141,7 +150,8 @@ body {
   padding: 8px 12px;
   border-radius: 12px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  flex: 1;
+  flex: 0 0 auto;
+  min-width: 65px;
   gap: 4px;
 }
 
