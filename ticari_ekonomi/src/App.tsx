@@ -8,8 +8,9 @@ import { Wallets } from './components/Wallets';
 import { Categories } from './components/Categories';
 import { Tags } from './components/Tags';
 import { Borsa } from './components/Borsa';
-import { fetchExchangeRates, fetchLiveStockPrices, DEFAULT_RATES } from './services/currencyService';
-import type { ExchangeRates } from './services/currencyService';
+import { DovizMaden } from './components/DovizMaden';
+import { fetchAllRatesData, fetchLiveStockPrices, DEFAULT_RATES } from './services/currencyService';
+import type { ExchangeRates, CurrencyRate } from './services/currencyService';
 import { FiAlertCircle } from 'react-icons/fi';
 import './App.css';
 
@@ -165,6 +166,7 @@ function App() {
 
   // Rates State
   const [rates, setRates] = useState<ExchangeRates>(DEFAULT_RATES);
+  const [currencyRates, setCurrencyRates] = useState<CurrencyRate[]>([]);
   const [ratesError, setRatesError] = useState(false);
   const [hasCheckedInterest, setHasCheckedInterest] = useState(false);
 
@@ -172,11 +174,12 @@ function App() {
   useEffect(() => {
     const updateRates = async () => {
       try {
-        const newRates = await fetchExchangeRates();
-        setRates(newRates);
+        const { rates, currencyRates } = await fetchAllRatesData();
+        setRates(rates);
+        setCurrencyRates(currencyRates);
         setRatesError(false);
-      } catch (error) {
-        console.error('Failed to fetch live rates, using fallback defaults:', error);
+      } catch (err) {
+        console.error('Failed to fetch rates', err);
         setRates(DEFAULT_RATES);
         setRatesError(true);
       }
@@ -445,6 +448,16 @@ function App() {
     }
   }, [computedWallets, activeTab]);
 
+  // If active tab is doviz but no doviz wallets exist, redirect to dashboard
+  useEffect(() => {
+    if (activeTab === 'doviz') {
+      const hasDovizMaden = computedWallets.some(w => ['Dolar', 'Euro', 'Altın', 'Gümüş'].includes(w.type));
+      if (computedWallets.length > 0 && !hasDovizMaden) {
+        setActiveTab('dashboard');
+      }
+    }
+  }, [computedWallets, activeTab]);
+
   // Render Loading Screen
   if (authLoading) {
     return (
@@ -584,6 +597,14 @@ function App() {
                 />
               )}
       
+              {activeTab === 'doviz' && (
+                <DovizMaden
+                  wallets={computedWallets}
+                  rates={rates}
+                  currencyRates={currencyRates}
+                />
+              )}
+      
               {activeTab === 'categories' && (
                 <Categories
                   categories={categories}
@@ -609,6 +630,7 @@ function App() {
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         hasBorsaWallet={computedWallets.some(w => w.type === 'Borsa_TRY' || w.type === 'Borsa_USD')}
+        hasDovizMadenWallet={computedWallets.some(w => ['Dolar', 'Euro', 'Altın', 'Gümüş'].includes(w.type))}
       />
     </div>
   );
