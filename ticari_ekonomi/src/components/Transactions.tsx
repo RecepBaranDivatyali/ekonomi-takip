@@ -5,9 +5,11 @@ import { FiPlus, FiTrash2, FiClock, FiAlertCircle, FiCheck, FiEdit2 } from 'reac
 interface Wallet {
   id: string;
   name: string;
-  type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD';
+  type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD' | 'Kredi_Karti';
   color: string;
   balance: number;
+  credit_limit?: number;
+  due_date?: number;
 }
 
 interface Category {
@@ -142,6 +144,18 @@ export const Transactions: React.FC<TransactionsProps> = ({
 
       if (editingTx.wallet_id === walletId) {
         const finalBalance = Number(oldWallet.balance) + oldReversal + newAdjustment;
+
+        if (oldWallet.type === 'Kredi_Karti') {
+          const limit = oldWallet.credit_limit || 0;
+          if (finalBalance < -limit) {
+            throw new Error(`Kredi kartı limiti yetersiz! İşlem sonrası borç: ${formatWalletBalance(-finalBalance, 'Vadesiz')}, Limit: ${formatWalletBalance(limit, 'Vadesiz')}`);
+          }
+        } else {
+          if (finalBalance < 0) {
+            throw new Error(`Yetersiz bakiye! İşlem sonrası bakiye sıfırın altına düşemez. (Mevcut Bakiye: ${formatWalletBalance(oldWallet.balance, oldWallet.type)})`);
+          }
+        }
+
         const { error: walletErr } = await supabase
           .from('wallets')
           .update({ balance: finalBalance })
@@ -149,13 +163,37 @@ export const Transactions: React.FC<TransactionsProps> = ({
         if (walletErr) throw walletErr;
       } else {
         const finalOldBalance = Number(oldWallet.balance) + oldReversal;
+
+        if (oldWallet.type === 'Kredi_Karti') {
+          const limit = oldWallet.credit_limit || 0;
+          if (finalOldBalance < -limit) {
+            throw new Error(`Kredi kartı limiti yetersiz! (Eski Cüzdan: ${oldWallet.name})`);
+          }
+        } else {
+          if (finalOldBalance < 0) {
+            throw new Error(`Yetersiz bakiye! (Eski Cüzdan: ${oldWallet.name})`);
+          }
+        }
+
+        const finalNewBalance = Number(newWallet.balance) + newAdjustment;
+
+        if (newWallet.type === 'Kredi_Karti') {
+          const limit = newWallet.credit_limit || 0;
+          if (finalNewBalance < -limit) {
+            throw new Error(`Kredi kartı limiti yetersiz! (Yeni Cüzdan: ${newWallet.name})`);
+          }
+        } else {
+          if (finalNewBalance < 0) {
+            throw new Error(`Yetersiz bakiye! (Yeni Cüzdan: ${newWallet.name})`);
+          }
+        }
+
         const { error: oldWalletErr } = await supabase
           .from('wallets')
           .update({ balance: finalOldBalance })
           .eq('id', oldWallet.id);
         if (oldWalletErr) throw oldWalletErr;
 
-        const finalNewBalance = Number(newWallet.balance) + newAdjustment;
         const { error: newWalletErr } = await supabase
           .from('wallets')
           .update({ balance: finalNewBalance })
@@ -286,6 +324,19 @@ export const Transactions: React.FC<TransactionsProps> = ({
       if (!selectedWallet) throw new Error('Cüzdan bulunamadı.');
 
       const numAmount = Number(amount);
+      const balanceChange = txType === 'Gelir' ? numAmount : -numAmount;
+      const newBalance = Number(selectedWallet.balance) + balanceChange;
+
+      if (selectedWallet.type === 'Kredi_Karti') {
+        const limit = selectedWallet.credit_limit || 0;
+        if (newBalance < -limit) {
+          throw new Error(`Kredi kartı limiti yetersiz! İşlem sonrası borç: ${formatWalletBalance(-newBalance, 'Vadesiz')}, Limit: ${formatWalletBalance(limit, 'Vadesiz')}`);
+        }
+      } else {
+        if (newBalance < 0) {
+          throw new Error(`Yetersiz bakiye! İşlem sonrası bakiye sıfırın altına düşemez. (Mevcut Bakiye: ${formatWalletBalance(selectedWallet.balance, selectedWallet.type)})`);
+        }
+      }
 
       // 1. Insert transaction into Supabase
       const { error: txError } = await supabase.from('transactions').insert({
@@ -302,9 +353,6 @@ export const Transactions: React.FC<TransactionsProps> = ({
       if (txError) throw txError;
 
       // 2. Adjust wallet balance in the DB
-      const balanceChange = txType === 'Gelir' ? numAmount : -numAmount;
-      const newBalance = Number(selectedWallet.balance) + balanceChange;
-
       const { error: walletError } = await supabase
         .from('wallets')
         .update({ balance: newBalance })
@@ -385,6 +433,17 @@ export const Transactions: React.FC<TransactionsProps> = ({
       const balanceChange = debt.type === 'Alınacak' ? numAmount : -numAmount;
       const newBalance = Number(wallet.balance) + balanceChange;
 
+      if (wallet.type === 'Kredi_Karti') {
+        const limit = wallet.credit_limit || 0;
+        if (newBalance < -limit) {
+          throw new Error(`Kredi kartı limiti yetersiz! Gelecek işlem gerçekleştirilemedi. (Mevcut Bakiye: ${formatWalletBalance(wallet.balance, wallet.type)})`);
+        }
+      } else {
+        if (newBalance < 0) {
+          throw new Error(`Yetersiz bakiye! Gelecek işlem gerçekleştirilemedi, hesap bakiyesi sıfırın altına düşemez. (Mevcut Bakiye: ${formatWalletBalance(wallet.balance, wallet.type)})`);
+        }
+      }
+
       // 1. Update wallet balance
       const { error: walletError } = await supabase
         .from('wallets')
@@ -452,6 +511,17 @@ export const Transactions: React.FC<TransactionsProps> = ({
         const balanceChange = isIncome ? -Number(tx.amount) : Number(tx.amount);
         const newBalance = Number(wallet.balance) + balanceChange;
 
+        if (wallet.type === 'Kredi_Karti') {
+          const limit = wallet.credit_limit || 0;
+          if (newBalance < -limit) {
+            throw new Error(`Kredi kartı limiti yetersiz! Bu işlemin silinmesi durumunda borç limiti aşacaktır.`);
+          }
+        } else {
+          if (newBalance < 0) {
+            throw new Error(`Yetersiz bakiye! Bu işlemin silinmesi durumunda hesap bakiyesi sıfırın altına düşecektir.`);
+          }
+        }
+
         // 1. Update wallet balance
         const { error: walletError } = await supabase
           .from('wallets')
@@ -472,7 +542,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
     }
   };
 
-  const formatWalletBalance = (val: number, type?: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD') => {
+  const formatWalletBalance = (val: number, type?: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD' | 'Kredi_Karti') => {
     if (type === 'Dolar') {
       return new Intl.NumberFormat('en-US', {
         style: 'currency',

@@ -146,10 +146,12 @@ const StockLogo: React.FC<{ symbol: string; profitLoss: number }> = ({ symbol, p
 interface Wallet {
   id: string;
   name: string;
-  type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD';
+  type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD' | 'Kredi_Karti';
   color: string;
   balance: number;
   cash_balance?: number;
+  credit_limit?: number;
+  due_date?: number;
 }
 
 interface UserStock {

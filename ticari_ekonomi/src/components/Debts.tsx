@@ -5,9 +5,11 @@ import { FiPlus, FiTrash2, FiCheck, FiAlertCircle } from 'react-icons/fi';
 interface Wallet {
   id: string;
   name: string;
-  type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD';
+  type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD' | 'Kredi_Karti';
   color: string;
   balance: number;
+  credit_limit?: number;
+  due_date?: number;
 }
 
 interface Category {
@@ -169,7 +171,7 @@ export const Debts: React.FC<DebtsProps> = ({
     }
   };
 
-  const formatWalletBalance = (val: number, type?: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD') => {
+  const formatWalletBalance = (val: number, type?: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD' | 'Kredi_Karti') => {
     if (type === 'Dolar') {
       return new Intl.NumberFormat('en-US', {
         style: 'currency',

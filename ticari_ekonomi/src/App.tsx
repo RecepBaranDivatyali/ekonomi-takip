@@ -17,7 +17,7 @@ import './App.css';
 interface Wallet {
   id: string;
   name: string;
-  type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD';
+  type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD' | 'Kredi_Karti';
   color: string;
   balance: number;
   interest_rate: number;
@@ -25,6 +25,8 @@ interface Wallet {
   last_interest_date: string;
   created_at?: string;
   cash_balance?: number;
+  credit_limit?: number;
+  due_date?: number;
 }
 
 interface Category {
@@ -578,12 +580,27 @@ function App() {
               )}
       
               {activeTab === 'wallets' && (
-                <Wallets
-                  wallets={computedWallets}
-                  onRefreshData={handleRefresh}
-                  userId={session.user.id}
-                  rates={rates}
-                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                  <Wallets
+                    wallets={computedWallets}
+                    onRefreshData={handleRefresh}
+                    userId={session.user.id}
+                    rates={rates}
+                  />
+                  <Tags
+                    tags={tags}
+                    transactions={transactions}
+                    categories={categories}
+                    wallets={computedWallets}
+                    onRefreshData={handleRefresh}
+                    userId={session.user.id}
+                  />
+                  <Categories
+                    categories={categories}
+                    onRefreshData={handleRefresh}
+                    userId={session.user.id}
+                  />
+                </div>
               )}
       
               {activeTab === 'borsa' && (
@@ -604,25 +621,6 @@ function App() {
                   currencyRates={currencyRates}
                   transactions={transactions}
                   categories={categories}
-                  onRefreshData={handleRefresh}
-                  userId={session.user.id}
-                />
-              )}
-      
-              {activeTab === 'categories' && (
-                <Categories
-                  categories={categories}
-                  onRefreshData={handleRefresh}
-                  userId={session.user.id}
-                />
-              )}
-      
-              {activeTab === 'tags' && (
-                <Tags
-                  tags={tags}
-                  transactions={transactions}
-                  categories={categories}
-                  wallets={computedWallets}
                   onRefreshData={handleRefresh}
                   userId={session.user.id}
                 />

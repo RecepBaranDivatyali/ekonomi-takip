@@ -21,9 +21,11 @@ interface Category {
 interface Wallet {
   id: string;
   name: string;
-  type: string;
+  type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD' | 'Kredi_Karti';
   color: string;
   balance: number;
+  credit_limit?: number;
+  due_date?: number;
 }
 
 interface Transaction {

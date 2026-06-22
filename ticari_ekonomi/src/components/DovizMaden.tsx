@@ -6,9 +6,11 @@ import type { ExchangeRates, CurrencyRate } from '../services/currencyService';
 interface Wallet {
   id: string;
   name: string;
-  type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD';
+  type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD' | 'Kredi_Karti';
   color: string;
   balance: number;
+  credit_limit?: number;
+  due_date?: number;
 }
 
 interface Transaction {
@@ -88,7 +90,7 @@ export const DovizMaden: React.FC<DovizMadenProps> = ({ wallets, rates, currency
 
   // Filter wallets
   const myWallets = useMemo(() => wallets.filter(w => DOVIZ_TYPES.includes(w.type)), [wallets]);
-  const vadesizWallets = useMemo(() => wallets.filter(w => w.type === 'Vadesiz'), [wallets]);
+  const vadesizWallets = useMemo(() => wallets.filter(w => w.type === 'Vadesiz' || w.type === 'Kredi_Karti'), [wallets]);
 
   // Set default target wallet
   React.useEffect(() => {
@@ -171,8 +173,16 @@ export const DovizMaden: React.FC<DovizMadenProps> = ({ wallets, rates, currency
         if (sourceWalletId !== 'other') {
           const sourceW = vadesizWallets.find(w => w.id === sourceWalletId);
           if (!sourceW) throw new Error('Kaynak hesap bulunamadı.');
-          if (sourceW.balance < totalTLRequired) {
-            throw new Error(`Kaynak hesapta yeterli bakiye yok. Gerekli: ${formatTL(totalTLRequired)}`);
+
+          const isCreditCard = sourceW.type === 'Kredi_Karti';
+          const maxSpendingLimit = isCreditCard ? (sourceW.balance + (sourceW.credit_limit || 0)) : sourceW.balance;
+
+          if (maxSpendingLimit < totalTLRequired) {
+            if (isCreditCard) {
+              throw new Error(`Kredi kartı limiti yetersiz! Gerekli: ${formatTL(totalTLRequired)}, Kalan Limit: ${formatTL(maxSpendingLimit)}`);
+            } else {
+              throw new Error(`Kaynak hesapta yeterli bakiye yok. Gerekli: ${formatTL(totalTLRequired)}`);
+            }
           }
           newSourceBalance = sourceW.balance - totalTLRequired;
         }
@@ -370,7 +380,9 @@ export const DovizMaden: React.FC<DovizMadenProps> = ({ wallets, rates, currency
               <select className="form-control" value={sourceWalletId} onChange={(e) => setSourceWalletId(e.target.value)} style={{ background: '#121826' }}>
                 <option value="other">Diğer (Banka Dışı / Hediye)</option>
                 {vadesizWallets.map(w => (
-                  <option key={w.id} value={w.id}>{w.name} ({formatTL(w.balance)})</option>
+                  <option key={w.id} value={w.id}>
+                    {w.name} {w.type === 'Kredi_Karti' ? '(Kredi Kartı - Borç/Limit)' : ''} ({formatTL(w.balance)})
+                  </option>
                 ))}
               </select>
             </div>

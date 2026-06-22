@@ -1,5 +1,4 @@
-import React from 'react';
-import { FiPieChart, FiList, FiCreditCard, FiTrendingUp, FiGrid, FiTag, FiDollarSign } from 'react-icons/fi';
+import { FiPieChart, FiList, FiCreditCard, FiTrendingUp, FiDollarSign } from 'react-icons/fi';
 
 interface NavbarProps {
   activeTab: string;
@@ -15,8 +14,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, hasBors
     { id: 'wallets', label: 'Cüzdanlar', icon: <FiCreditCard /> },
     ...(hasBorsaWallet ? [{ id: 'borsa', label: 'Borsa', icon: <FiTrendingUp /> }] : []),
     ...(hasDovizMadenWallet ? [{ id: 'doviz', label: 'Döviz/Maden', icon: <FiDollarSign /> }] : []),
-    { id: 'categories', label: 'Kategoriler', icon: <FiGrid /> },
-    { id: 'tags', label: 'Etiketler', icon: <FiTag /> },
   ];
 
   return (

@@ -6,9 +6,11 @@ import type { ExchangeRates } from '../services/currencyService';
 interface Wallet {
   id: string;
   name: string;
-  type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD';
+  type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD' | 'Kredi_Karti';
   color: string;
   balance: number;
+  credit_limit?: number;
+  due_date?: number;
 }
 
 interface Category {
@@ -91,7 +93,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [transactions, selectedWalletId]);
 
   // Dynamic currency format helper
-  const formatCurrency = React.useCallback((val: number, type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD' = 'Vadesiz') => {
+  const formatCurrency = React.useCallback((val: number, type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD' | 'Kredi_Karti' = 'Vadesiz') => {
     if (type === 'Dolar' || type === 'Borsa_USD') {
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -206,7 +208,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       .slice(0, 3);
   }, [filteredTransactions]);
 
-  const getWalletIcon = (walletType: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD') => {
+  const getWalletIcon = (walletType: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD' | 'Kredi_Karti') => {
     switch (walletType) {
       case 'Dolar': return '$';
       case 'Euro': return '€';
@@ -215,6 +217,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       case 'Vadeli': return '🏦';
       case 'Borsa_TRY':
       case 'Borsa_USD': return '📈';
+      case 'Kredi_Karti': return '💳';
       default: return '💵';
     }
   };

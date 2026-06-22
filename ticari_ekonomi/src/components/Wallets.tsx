@@ -6,12 +6,14 @@ import type { ExchangeRates } from '../services/currencyService';
 interface Wallet {
   id: string;
   name: string;
-  type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD';
+  type: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD' | 'Kredi_Karti';
   color: string;
   balance: number;
   interest_rate: number;
   maturity_days: number;
   last_interest_date: string;
+  credit_limit?: number;
+  due_date?: number;
 }
 
 interface WalletsProps {
@@ -35,9 +37,11 @@ const COLORS = [
 export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId, rates }) => {
   const [name, setName] = useState('');
   const [balance, setBalance] = useState('');
-  const [type, setType] = useState<'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD'>('Vadesiz');
+  const [type, setType] = useState<Wallet['type']>('Vadesiz');
   const [interestRate, setInterestRate] = useState('');
   const [maturityDays, setMaturityDays] = useState('32');
+  const [creditLimit, setCreditLimit] = useState('');
+  const [dueDate, setDueDate] = useState('15');
   const [color, setColor] = useState(COLORS[0]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -49,8 +53,10 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
     setName(w.name);
     setBalance(String(w.balance));
     setType(w.type);
-    setInterestRate(String(w.interest_rate));
-    setMaturityDays(String(w.maturity_days));
+    setInterestRate(String(w.interest_rate || ''));
+    setMaturityDays(String(w.maturity_days || ''));
+    setCreditLimit(String(w.credit_limit || ''));
+    setDueDate(String(w.due_date || '15'));
     setColor(w.color);
     setShowAddForm(false);
     setErrorMsg(null);
@@ -73,6 +79,8 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
           color,
           interest_rate: type === 'Vadeli' ? (Number(interestRate) || 0) : 0,
           maturity_days: type === 'Vadeli' ? (Number(maturityDays) || 30) : 30,
+          credit_limit: type === 'Kredi_Karti' ? (Number(creditLimit) || 0) : null,
+          due_date: type === 'Kredi_Karti' ? (Number(dueDate) || 15) : null,
         })
         .eq('id', editingWallet.id);
 
@@ -84,6 +92,8 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
       setType('Vadesiz');
       setInterestRate('');
       setMaturityDays('32');
+      setCreditLimit('');
+      setDueDate('15');
       onRefreshData();
     } catch (err: any) {
       setErrorMsg(err.message || 'Cüzdan güncellenirken hata oluştu.');
@@ -109,6 +119,8 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
         interest_rate: type === 'Vadeli' ? (Number(interestRate) || 0) : 0,
         maturity_days: type === 'Vadeli' ? (Number(maturityDays) || 30) : 30,
         last_interest_date: type === 'Vadeli' ? new Date().toISOString().split('T')[0] : null,
+        credit_limit: type === 'Kredi_Karti' ? (Number(creditLimit) || 0) : null,
+        due_date: type === 'Kredi_Karti' ? (Number(dueDate) || 15) : null,
       });
 
       if (error) throw error;
@@ -118,6 +130,8 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
       setType('Vadesiz');
       setInterestRate('');
       setMaturityDays('32');
+      setCreditLimit('');
+      setDueDate('15');
       setShowAddForm(false);
       onRefreshData();
     } catch (err: any) {
@@ -157,7 +171,7 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
     }).format(tryVal)})`;
   };
 
-  const formatWalletBalance = (val: number, walletType: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD') => {
+  const formatWalletBalance = (val: number, walletType: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD' | 'Kredi_Karti') => {
     if (walletType === 'Dolar') {
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -204,7 +218,7 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
     }).format(val);
   };
 
-  const getWalletIcon = (walletType: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD') => {
+  const getWalletIcon = (walletType: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD' | 'Kredi_Karti') => {
     switch (walletType) {
       case 'Dolar': return '$';
       case 'Euro': return '€';
@@ -213,6 +227,7 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
       case 'Vadeli': return '🏦';
       case 'Borsa_TRY':
       case 'Borsa_USD': return '📈';
+      case 'Kredi_Karti': return '💳';
       default: return '💵';
     }
   };
@@ -306,14 +321,28 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
                         textTransform: 'uppercase'
                       }}
                     >
-                      {w.type}
+                      {w.type === 'Kredi_Karti' ? 'Kredi Kartı' : w.type}
                     </span>
                   </span>
+                  {w.type === 'Kredi_Karti' && (
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px', display: 'flex', gap: '8px' }}>
+                      <span>Limit: {formatWalletBalance(w.credit_limit || 0, 'Vadesiz')}</span>
+                      <span>•</span>
+                      <span>Son Ödeme: Ayın {w.due_date || 15}'i</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="tx-right" style={{ flexDirection: 'row', alignItems: 'center', gap: '12px' }}>
                 <span className="tx-amount" style={{ color: 'var(--text-bright)', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                  <span>{formatWalletBalance(Number(w.balance), w.type)}</span>
+                  <span style={{ color: w.type === 'Kredi_Karti' && Number(w.balance) < 0 ? '#ef4444' : 'inherit' }}>
+                    {formatWalletBalance(Number(w.balance), w.type)}
+                  </span>
+                  {w.type === 'Kredi_Karti' && (
+                    <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 500, marginTop: '2px' }}>
+                      Kalan Limit: {formatWalletBalance((w.credit_limit || 0) + Number(w.balance), 'Vadesiz')}
+                    </span>
+                  )}
                   {showTryEquivalent(Number(w.balance), w.type) && (
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500, marginTop: '2px' }}>
                       {showTryEquivalent(Number(w.balance), w.type)}
@@ -428,6 +457,7 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
                 <option value="Gümüş">Gümüş Hesabı (Gram - gr)</option>
                 <option value="Borsa_TRY">Borsa Hesabı (TL - ₺)</option>
                 <option value="Borsa_USD">Borsa Hesabı (Dolar - $)</option>
+                <option value="Kredi_Karti">Kredi Kartı (TL - ₺)</option>
               </select>
             </div>
 
@@ -457,9 +487,39 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
               </div>
             )}
 
+            {type === 'Kredi_Karti' && (
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '14px' }}>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Kart Limiti (₺)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    className="form-control"
+                    value={creditLimit}
+                    onChange={(e) => setCreditLimit(e.target.value)}
+                    required
+                    placeholder="Örn: 20000"
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Son Ödeme Günü (Ayın Kaçı?)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="31"
+                    className="form-control"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    required
+                    placeholder="Örn: 15"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="form-group">
               <label className="form-label">
-                Bakiye {(type === 'Altın' || type === 'Gümüş') ? '(Gram Cinsinden)' : `(${type === 'Dolar' || type === 'Borsa_USD' ? '$' : type === 'Euro' ? '€' : '₺'})`}
+                Bakiye {type === 'Kredi_Karti' ? '(Mevcut borç için eksi değer girin, örn: -2500)' : ((type === 'Altın' || type === 'Gümüş') ? '(Gram Cinsinden)' : `(${type === 'Dolar' || type === 'Borsa_USD' ? '$' : type === 'Euro' ? '€' : '₺'})`)}
               </label>
               <input
                 type="number"
@@ -532,6 +592,7 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
                 <option value="Gümüş">Gümüş Hesabı (Gram - gr)</option>
                 <option value="Borsa_TRY">Borsa Hesabı (TL - ₺)</option>
                 <option value="Borsa_USD">Borsa Hesabı (Dolar - $)</option>
+                <option value="Kredi_Karti">Kredi Kartı (TL - ₺)</option>
               </select>
             </div>
 
@@ -563,9 +624,39 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
               </div>
             )}
 
+            {type === 'Kredi_Karti' && (
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '14px' }}>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Kart Limiti (₺)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    className="form-control"
+                    placeholder="Örn: 20000"
+                    value={creditLimit}
+                    onChange={(e) => setCreditLimit(e.target.value)}
+                    required
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Son Ödeme Günü (Ayın Kaçı?)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="31"
+                    className="form-control"
+                    placeholder="Örn: 15"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="form-group">
               <label className="form-label">
-                Başlangıç Bakiyesi {(type === 'Altın' || type === 'Gümüş') ? '(Gram Cinsinden)' : `(${type === 'Dolar' || type === 'Borsa_USD' ? '$' : type === 'Euro' ? '€' : '₺'})`}
+                Başlangıç Bakiyesi {type === 'Kredi_Karti' ? '(Mevcut borç için eksi değer girin, örn: -2500)' : ((type === 'Altın' || type === 'Gümüş') ? '(Gram Cinsinden)' : `(${type === 'Dolar' || type === 'Borsa_USD' ? '$' : type === 'Euro' ? '€' : '₺'})`)}
               </label>
               <input
                 type="number"
