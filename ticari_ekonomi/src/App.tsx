@@ -98,6 +98,9 @@ function App() {
     IPJ: { price: 0.098412, change: -0.15 },
     GMR: { price: 0.541258, change: 1.30 },
     IIH: { price: 0.231245, change: -0.80 },
+    PNU: { price: 2.145823, change: 0.12 },
+    PRY: { price: 1.845612, change: 0.08 },
+    TP2: { price: 5.412563, change: 0.15 },
 
     // BIST Non-API Stock Fallbacks
     LIDER: { price: 72.85, change: 1.25 },
@@ -129,7 +132,7 @@ function App() {
           
           // Random walk for custom symbols (US stocks, TEFAS funds, LIDER)
           const customKeys = [
-            'AFT', 'MAC', 'TTE', 'YAS', 'IPJ', 'GMR', 'IIH', 'LIDER',
+            'AFT', 'MAC', 'TTE', 'YAS', 'IPJ', 'GMR', 'IIH', 'PNU', 'PRY', 'TP2', 'LIDER',
             'AAPL', 'MSFT', 'TSLA', 'NVDA', 'AMZN', 'GOOGL', 'META', 'NFLX',
             'SPY', 'QQQ', 'VOO', 'ARKK', 'GLD', 'TLT'
           ];

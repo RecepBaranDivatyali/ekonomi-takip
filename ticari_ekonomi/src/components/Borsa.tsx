@@ -52,7 +52,7 @@ const TRY_STOCKS = [
   'TRENJ', 'TRMET', 'TSKB', 'TTKOM', 'TTRAK', 'TUKAS', 'TUPRS', 'TUREX', 'TURSG', 'ULKER', 
   'VAKBN', 'VESTL', 'YKBNK', 'ZOREN'
 ];
-const TRY_FUNDS = ['AFT', 'MAC', 'TTE', 'YAS', 'IPJ', 'GMR', 'IIH'];
+const TRY_FUNDS = ['AFT', 'MAC', 'TTE', 'YAS', 'IPJ', 'GMR', 'IIH', 'PNU', 'PRY', 'TP2'];
 
 const USD_STOCKS = ['AAPL', 'MSFT', 'TSLA', 'NVDA', 'AMZN', 'GOOGL', 'META', 'NFLX'];
 const USD_ETFS = ['SPY', 'QQQ', 'VOO', 'ARKK', 'GLD', 'TLT'];
