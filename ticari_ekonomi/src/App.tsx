@@ -602,6 +602,10 @@ function App() {
                   wallets={computedWallets}
                   rates={rates}
                   currencyRates={currencyRates}
+                  transactions={transactions}
+                  categories={categories}
+                  onRefreshData={handleRefresh}
+                  userId={session.user.id}
                 />
               )}
       
