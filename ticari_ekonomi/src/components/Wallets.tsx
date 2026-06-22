@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { FiPlus, FiTrash2, FiAlertCircle } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiAlertCircle, FiEdit2 } from 'react-icons/fi';
 import type { ExchangeRates } from '../services/currencyService';
 
 interface Wallet {
@@ -42,6 +42,55 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingWallet, setEditingWallet] = useState<Wallet | null>(null);
+
+  const handleStartEditWallet = (w: Wallet) => {
+    setEditingWallet(w);
+    setName(w.name);
+    setBalance(String(w.balance));
+    setType(w.type);
+    setInterestRate(String(w.interest_rate));
+    setMaturityDays(String(w.maturity_days));
+    setColor(w.color);
+    setShowAddForm(false);
+    setErrorMsg(null);
+  };
+
+  const handleSaveEditWallet = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingWallet || !name.trim()) return;
+
+    setLoading(true);
+    setErrorMsg(null);
+
+    try {
+      const { error } = await supabase
+        .from('wallets')
+        .update({
+          name: name.trim(),
+          type,
+          balance: balance ? Number(balance) : 0,
+          color,
+          interest_rate: type === 'Vadeli' ? (Number(interestRate) || 0) : 0,
+          maturity_days: type === 'Vadeli' ? (Number(maturityDays) || 30) : 30,
+        })
+        .eq('id', editingWallet.id);
+
+      if (error) throw error;
+
+      setEditingWallet(null);
+      setName('');
+      setBalance('');
+      setType('Vadesiz');
+      setInterestRate('');
+      setMaturityDays('32');
+      onRefreshData();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Cüzdan güncellenirken hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddWallet = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -273,6 +322,26 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
                 </span>
                 <button
                   type="button"
+                  className="circle-action-btn edit"
+                  onClick={() => handleStartEditWallet(w)}
+                  title="Cüzdanı Düzenle"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    background: 'rgba(59, 130, 246, 0.1)',
+                    border: '1px solid rgba(59, 130, 246, 0.2)',
+                    color: '#60a5fa',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <FiEdit2 />
+                </button>
+                <button
+                  type="button"
                   className="circle-action-btn delete"
                   onClick={() => handleDeleteWallet(w.id)}
                   title="Cüzdanı Sil"
@@ -295,6 +364,137 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
           </div>
         )}
       </div>
+
+      {/* Edit Wallet Form */}
+      {editingWallet && (
+        <div className="card muted" style={{ textAlign: 'left', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <div className="card-title" style={{ margin: 0 }}>
+              Cüzdan / Hesap Düzenle
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingWallet(null);
+                setName('');
+                setBalance('');
+                setType('Vadesiz');
+                setInterestRate('');
+                setMaturityDays('32');
+              }}
+              className="btn"
+              style={{
+                width: 'auto',
+                margin: 0,
+                padding: '4px 10px',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                color: 'var(--text-bright)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              Vazgeç
+            </button>
+          </div>
+          <form onSubmit={handleSaveEditWallet}>
+            <div className="form-group">
+              <label className="form-label">Cüzdan / Hesap Adı</label>
+              <input
+                type="text"
+                className="form-control"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Hesap / Para Birimi Türü</label>
+              <select
+                className="form-control"
+                value={type}
+                onChange={(e) => setType(e.target.value as any)}
+                required
+                style={{ background: '#121826' }}
+              >
+                <option value="Vadesiz">Vadesiz Hesap / Nakit (TL - ₺)</option>
+                <option value="Vadeli">Vadeli Hesap / Vadeli Mevduat (TL - ₺)</option>
+                <option value="Dolar">USD Hesabı (Dolar - $)</option>
+                <option value="Euro">EUR Hesabı (Euro - €)</option>
+                <option value="Altın">Altın Hesabı (Gram - gr)</option>
+                <option value="Gümüş">Gümüş Hesabı (Gram - gr)</option>
+                <option value="Borsa_TRY">Borsa Hesabı (TL - ₺)</option>
+                <option value="Borsa_USD">Borsa Hesabı (Dolar - $)</option>
+              </select>
+            </div>
+
+            {type === 'Vadeli' && (
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '14px' }}>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Yıllık Net Faiz Oranı (%)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    className="form-control"
+                    value={interestRate}
+                    onChange={(e) => setInterestRate(e.target.value)}
+                    required
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Vade Süresi (Gün)</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    value={maturityDays}
+                    onChange={(e) => setMaturityDays(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="form-group">
+              <label className="form-label">
+                Bakiye {(type === 'Altın' || type === 'Gümüş') ? '(Gram Cinsinden)' : `(${type === 'Dolar' || type === 'Borsa_USD' ? '$' : type === 'Euro' ? '€' : '₺'})`}
+              </label>
+              <input
+                type="number"
+                step="any"
+                className="form-control"
+                value={balance}
+                onChange={(e) => setBalance(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Cüzdan Rengi</label>
+              <div className="color-radio-grid">
+                {COLORS.map((c) => (
+                  <div
+                    key={c}
+                    className={`color-dot ${color === c ? 'selected' : ''}`}
+                    style={{ backgroundColor: c }}
+                    onClick={() => setColor(c)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary"
+              style={{ marginTop: '8px' }}
+              disabled={loading}
+            >
+              <span>{loading ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}</span>
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Add Wallet Form */}
       {showAddForm && (

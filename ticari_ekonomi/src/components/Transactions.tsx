@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { FiPlus, FiTrash2, FiClock, FiAlertCircle, FiCheck } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiClock, FiAlertCircle, FiCheck, FiEdit2 } from 'react-icons/fi';
 
 interface Wallet {
   id: string;
@@ -95,6 +95,152 @@ export const Transactions: React.FC<TransactionsProps> = ({
   const [activeTxId, setActiveTxId] = useState<string | null>(null); // For click-to-reveal action row
   const [activeFeedTab, setActiveFeedTab] = useState<'transactions' | 'debts'>('transactions');
   const [expandedDebtId, setExpandedDebtId] = useState<string | null>(null);
+
+  // Edit States
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
+
+  const handleStartEditTransaction = (tx: Transaction) => {
+    setEditingTx(tx);
+    setEditingDebt(null);
+    setAmount(String(tx.amount));
+    setWalletId(tx.wallet_id);
+    setCategoryId(tx.category_id);
+    setTagId(tx.tag_id || '');
+    setDescription(tx.description || '');
+    setDate(tx.date);
+    setTime(tx.time_range);
+    
+    const cat = categories.find(c => c.id === tx.category_id);
+    if (cat) {
+      setTxType(cat.type);
+    }
+    setShowAddForm(false);
+    setErrorMsg(null);
+  };
+
+  const handleSaveEditTransaction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTx || !amount || Number(amount) <= 0 || !walletId || !categoryId) {
+      setErrorMsg('Lütfen tüm zorunlu alanları doldurun.');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg(null);
+
+    try {
+      const numAmount = Number(amount);
+      const oldWallet = wallets.find(w => w.id === editingTx.wallet_id);
+      const newWallet = wallets.find(w => w.id === walletId);
+      if (!oldWallet || !newWallet) throw new Error('Cüzdan bulunamadı.');
+
+      const oldCat = categories.find(c => c.id === editingTx.category_id);
+      const oldType = oldCat ? oldCat.type : 'Gider';
+      const oldReversal = oldType === 'Gelir' ? -editingTx.amount : editingTx.amount;
+      const newAdjustment = txType === 'Gelir' ? numAmount : -numAmount;
+
+      if (editingTx.wallet_id === walletId) {
+        const finalBalance = Number(oldWallet.balance) + oldReversal + newAdjustment;
+        const { error: walletErr } = await supabase
+          .from('wallets')
+          .update({ balance: finalBalance })
+          .eq('id', walletId);
+        if (walletErr) throw walletErr;
+      } else {
+        const finalOldBalance = Number(oldWallet.balance) + oldReversal;
+        const { error: oldWalletErr } = await supabase
+          .from('wallets')
+          .update({ balance: finalOldBalance })
+          .eq('id', oldWallet.id);
+        if (oldWalletErr) throw oldWalletErr;
+
+        const finalNewBalance = Number(newWallet.balance) + newAdjustment;
+        const { error: newWalletErr } = await supabase
+          .from('wallets')
+          .update({ balance: finalNewBalance })
+          .eq('id', walletId);
+        if (newWalletErr) throw newWalletErr;
+      }
+
+      const { error: txErr } = await supabase
+        .from('transactions')
+        .update({
+          wallet_id: walletId,
+          category_id: categoryId,
+          tag_id: tagId || null,
+          amount: numAmount,
+          description: description.trim(),
+          date,
+          time_range: time,
+        })
+        .eq('id', editingTx.id);
+
+      if (txErr) throw txErr;
+
+      setEditingTx(null);
+      setAmount('');
+      setDescription('');
+      setDate(new Date().toISOString().split('T')[0]);
+      setTagId('');
+      onRefreshData();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'İşlem güncellenirken hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartEditDebt = (debt: Debt) => {
+    setEditingDebt(debt);
+    setEditingTx(null);
+    setDebtName(debt.name);
+    setAmount(String(debt.amount));
+    setWalletId(debt.wallet_id);
+    setCategoryId(debt.category_id || '');
+    setDebtDueDate(debt.due_date || '');
+    setDebtType(debt.type);
+    setShowAddForm(false);
+    setErrorMsg(null);
+  };
+
+  const handleSaveEditDebt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDebt || !debtName.trim() || !amount || Number(amount) <= 0 || !walletId) {
+      setErrorMsg('Lütfen gerekli alanları doldurun.');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg(null);
+
+    try {
+      const { error } = await supabase
+        .from('debts')
+        .update({
+          wallet_id: walletId,
+          category_id: categoryId || null,
+          type: debtType,
+          amount: Number(amount),
+          name: debtName.trim(),
+          due_date: debtDueDate || null,
+        })
+        .eq('id', editingDebt.id);
+
+      if (error) throw error;
+
+      setEditingDebt(null);
+      setDebtName('');
+      setAmount('');
+      setDebtDueDate('');
+      setCategoryId('');
+      onRefreshData();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Gelecek işlem güncellenirken hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter categories based on transaction type (Income vs Expense)
   const filteredCategories = React.useMemo(() => {
@@ -421,6 +567,291 @@ export const Transactions: React.FC<TransactionsProps> = ({
         <div className="toast error" style={{ position: 'static', marginBottom: '16px' }}>
           <FiAlertCircle />
           <span>{errorMsg}</span>
+        </div>
+      )}
+
+      {/* Edit Transaction Form */}
+      {editingTx && (
+        <div className="card muted" style={{ textAlign: 'left', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <div className="card-title" style={{ margin: 0 }}>
+              İşlemi Düzenle
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingTx(null);
+                setAmount('');
+                setDescription('');
+                setTagId('');
+              }}
+              className="btn"
+              style={{
+                width: 'auto',
+                margin: 0,
+                padding: '4px 10px',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                color: 'var(--text-bright)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              Vazgeç
+            </button>
+          </div>
+
+          <div className="tab-switch" style={{ marginBottom: '16px' }}>
+            <button
+              type="button"
+              className={`tab-switch-btn ${txType === 'Gider' ? 'active gider' : ''}`}
+              onClick={() => setTxType('Gider')}
+            >
+              Gider
+            </button>
+            <button
+              type="button"
+              className={`tab-switch-btn ${txType === 'Gelir' ? 'active gelir' : ''}`}
+              onClick={() => setTxType('Gelir')}
+            >
+              Gelir
+            </button>
+          </div>
+
+          <form onSubmit={handleSaveEditTransaction}>
+            <div className="form-group">
+              <label className="form-label">
+                Tutar {activeWallet ? `(${activeWallet.type === 'Altın' || activeWallet.type === 'Gümüş' ? 'Gram' : activeWallet.type === 'Dolar' || activeWallet.type === 'Borsa_USD' ? '$' : activeWallet.type === 'Euro' ? '€' : '₺'})` : ''}
+              </label>
+              <input
+                type="number"
+                step="any"
+                className="form-control"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Cüzdan / Hesap</label>
+              <select
+                className="form-control"
+                value={walletId}
+                onChange={(e) => setWalletId(e.target.value)}
+                required
+                style={{ background: '#121826' }}
+              >
+                {wallets.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name} [{w.type}] ({formatWalletBalance(Number(w.balance), w.type)})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Kategori</label>
+              <select
+                className="form-control"
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                required
+                style={{ background: '#121826' }}
+              >
+                {filteredCategories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.emoji} {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Etiket (İsteğe Bağlı)</label>
+              <select
+                className="form-control"
+                value={tagId}
+                onChange={(e) => setTagId(e.target.value)}
+                style={{ background: '#121826' }}
+              >
+                <option value="">Etiketsiz</option>
+                {tags.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.emoji} {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label className="form-label">Tarih</label>
+                <input
+                  type="date"
+                  className="form-control"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label className="form-label">Saat</label>
+                <input
+                  type="time"
+                  className="form-control"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Açıklama</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="İşleme ait açıklama girin..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              <span>{loading ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}</span>
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Edit Debt Form */}
+      {editingDebt && (
+        <div className="card muted" style={{ textAlign: 'left', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <div className="card-title" style={{ margin: 0 }}>
+              Gelecek İşlemi Düzenle
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingDebt(null);
+                setDebtName('');
+                setAmount('');
+                setDebtDueDate('');
+                setCategoryId('');
+              }}
+              className="btn"
+              style={{
+                width: 'auto',
+                margin: 0,
+                padding: '4px 10px',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                color: 'var(--text-bright)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              Vazgeç
+            </button>
+          </div>
+
+          <div className="tab-switch" style={{ marginBottom: '16px' }}>
+            <button
+              type="button"
+              className={`tab-switch-btn ${debtType === 'Verilecek' ? 'active gider' : ''}`}
+              onClick={() => setDebtType('Verilecek')}
+            >
+              Gider
+            </button>
+            <button
+              type="button"
+              className={`tab-switch-btn ${debtType === 'Alınacak' ? 'active gelir' : ''}`}
+              onClick={() => setDebtType('Alınacak')}
+            >
+              Gelir
+            </button>
+          </div>
+
+          <form onSubmit={handleSaveEditDebt}>
+            <div className="form-group">
+              <label className="form-label">Kişi / Kurum Adı</label>
+              <input
+                type="text"
+                className="form-control"
+                value={debtName}
+                onChange={(e) => setDebtName(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                Miktar {activeWallet ? `(${activeWallet.type === 'Altın' || activeWallet.type === 'Gümüş' ? 'Gram' : activeWallet.type === 'Dolar' || activeWallet.type === 'Borsa_USD' ? '$' : activeWallet.type === 'Euro' ? '€' : '₺'})` : ''}
+              </label>
+              <input
+                type="number"
+                step="any"
+                className="form-control"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">İlişkili Hesap</label>
+              <select
+                className="form-control"
+                value={walletId}
+                onChange={(e) => setWalletId(e.target.value)}
+                required
+                style={{ background: '#121826' }}
+              >
+                {wallets.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name} [{w.type}] ({formatWalletBalance(Number(w.balance), w.type)})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Kategori (İsteğe Bağlı)</label>
+              <select
+                className="form-control"
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                style={{ background: '#121826' }}
+              >
+                <option value="">Kategori seçmeyin</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.emoji} {c.name} ({c.type})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Son Ödeme Tarihi (İsteğe Bağlı)</label>
+              <input
+                type="date"
+                className="form-control"
+                value={debtDueDate}
+                onChange={(e) => setDebtDueDate(e.target.value)}
+              />
+            </div>
+
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              <span>{loading ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}</span>
+            </button>
+          </form>
         </div>
       )}
 
@@ -836,6 +1267,29 @@ export const Transactions: React.FC<TransactionsProps> = ({
                       </div>
                       <button
                         type="button"
+                        className="circle-action-btn edit"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Avoid closing action bar on click
+                          handleStartEditTransaction(tx);
+                        }}
+                        title="İşlemi Düzenle"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '50%',
+                          background: 'rgba(59, 130, 246, 0.1)',
+                          border: '1px solid rgba(59, 130, 246, 0.2)',
+                          color: '#60a5fa',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <FiEdit2 />
+                      </button>
+                      <button
+                        type="button"
                         className="circle-action-btn delete"
                         onClick={(e) => {
                           e.stopPropagation(); // Avoid closing action bar on click
@@ -931,28 +1385,52 @@ export const Transactions: React.FC<TransactionsProps> = ({
                       {/* Action buttons inside details */}
                       <div className="item-actions" style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                         {debt.status === 'Bekliyor' && (
-                          <button
-                            type="button"
-                            className="circle-action-btn"
-                            onClick={() => handleMarkAsPaid(debt)}
-                            style={{
-                              width: 'auto',
-                              padding: '4px 12px',
-                              borderRadius: '8px',
-                              color: '#10b981',
-                              borderColor: 'rgba(16, 185, 129, 0.2)',
-                              background: 'rgba(16, 185, 129, 0.1)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              fontWeight: 700,
-                              fontSize: '0.72rem',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <FiCheck />
-                            <span>Ödendi Yap</span>
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              className="circle-action-btn"
+                              onClick={() => handleStartEditDebt(debt)}
+                              style={{
+                                width: 'auto',
+                                padding: '4px 12px',
+                                borderRadius: '8px',
+                                color: '#60a5fa',
+                                borderColor: 'rgba(59, 130, 246, 0.2)',
+                                background: 'rgba(59, 130, 246, 0.1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontWeight: 700,
+                                fontSize: '0.72rem',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <FiEdit2 />
+                              <span>Düzenle</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="circle-action-btn"
+                              onClick={() => handleMarkAsPaid(debt)}
+                              style={{
+                                width: 'auto',
+                                padding: '4px 12px',
+                                borderRadius: '8px',
+                                color: '#10b981',
+                                borderColor: 'rgba(16, 185, 129, 0.2)',
+                                background: 'rgba(16, 185, 129, 0.1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontWeight: 700,
+                                fontSize: '0.72rem',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <FiCheck />
+                              <span>Ödendi Yap</span>
+                            </button>
+                          </>
                         )}
                         <button
                           type="button"
