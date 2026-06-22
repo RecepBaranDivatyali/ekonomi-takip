@@ -102,6 +102,13 @@ export const Transactions: React.FC<TransactionsProps> = ({
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
 
+  // Filter States
+  const [filterWalletId, setFilterWalletId] = useState<string>('all');
+  const [filterStartDate, setFilterStartDate] = useState<string>('');
+  const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const [filterMinAmount, setFilterMinAmount] = useState<string>('');
+  const [filterMaxAmount, setFilterMaxAmount] = useState<string>('');
+
   const handleStartEditTransaction = (tx: Transaction) => {
     setEditingTx(tx);
     setEditingDebt(null);
@@ -594,10 +601,69 @@ export const Transactions: React.FC<TransactionsProps> = ({
   const walletMap = React.useMemo(() => new Map(wallets.map((w) => [w.id, w])), [wallets]);
   const tagMap = React.useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags]);
 
-  // Sort transactions by date descending
+  // Resolve category helper (handles null/automatic categories for Borsa & Döviz)
+  const resolveTxCategory = React.useCallback((tx: Transaction) => {
+    const cat = categoryMap.get(tx.category_id);
+    const isOther = cat && (cat.name === 'Diğer' || cat.id === 'diger-fallback');
+
+    if (cat && !isOther) return cat;
+
+    const w = walletMap.get(tx.wallet_id);
+    const desc = (tx.description || '').toLowerCase();
+
+    if ((w && (w.type === 'Borsa_TRY' || w.type === 'Borsa_USD')) || desc.includes('hisse') || desc.includes('borsa')) {
+      return {
+        id: 'borsa-fallback',
+        name: 'Borsa / Yatırım',
+        emoji: '📈',
+        color: '#84CC16',
+        type: tx.amount < 0 ? 'Gider' : 'Gelir'
+      };
+    }
+
+    if ((w && ['Dolar', 'Euro', 'Altın', 'Gümüş'].includes(w.type)) || desc.includes('döviz') || desc.includes('altın') || desc.includes('gümüş') || desc.includes('kur ')) {
+      return {
+        id: 'doviz-fallback',
+        name: 'Döviz / Maden',
+        emoji: '💱',
+        color: '#3B82F6',
+        type: tx.amount < 0 ? 'Gider' : 'Gelir'
+      };
+    }
+
+    if (cat) return cat;
+
+    return {
+      id: 'diger-fallback',
+      name: 'Diğer',
+      emoji: '🪙',
+      color: '#64748B',
+      type: tx.amount < 0 ? 'Gider' : 'Gelir'
+    };
+  }, [categoryMap, walletMap]);
+
+  // Sort and filter transactions by criteria
   const sortedTransactions = React.useMemo(() => {
-    return [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions]);
+    let filtered = [...transactions];
+
+    if (filterWalletId !== 'all') {
+      filtered = filtered.filter(tx => tx.wallet_id === filterWalletId);
+    }
+    if (filterStartDate) {
+      filtered = filtered.filter(tx => tx.date >= filterStartDate);
+    }
+    if (filterEndDate) {
+      filtered = filtered.filter(tx => tx.date <= filterEndDate);
+    }
+    if (filterMinAmount) {
+      filtered = filtered.filter(tx => Number(tx.amount) >= Number(filterMinAmount));
+    }
+    if (filterMaxAmount) {
+      filtered = filtered.filter(tx => Number(tx.amount) <= Number(filterMaxAmount));
+    }
+
+    return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactions, filterWalletId, filterStartDate, filterEndDate, filterMinAmount, filterMaxAmount]);
 
   // Active wallet type
   const activeWallet = React.useMemo(() => {
@@ -1121,23 +1187,43 @@ export const Transactions: React.FC<TransactionsProps> = ({
                 <div className="form-group">
                   <label className="form-label">Kategori Seçin</label>
                   {filteredCategories.length > 0 ? (
-                    <div className="emoji-radio-grid">
-                      {filteredCategories.map((cat) => (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          className={`emoji-radio-btn ${categoryId === cat.id ? 'selected' : ''}`}
-                          onClick={() => setCategoryId(cat.id)}
-                          title={cat.name}
-                          style={{ borderColor: categoryId === cat.id ? cat.color : 'rgba(255, 255, 255, 0.05)' }}
-                        >
-                          <span>{cat.emoji}</span>
-                        </button>
-                      ))}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px', marginTop: '8px' }}>
+                      {filteredCategories.map((cat) => {
+                        const isSelected = categoryId === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setCategoryId(cat.id)}
+                            title={cat.name}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              padding: '8px 10px',
+                              background: isSelected ? `${cat.color}18` : 'rgba(255, 255, 255, 0.02)',
+                              border: '1px solid',
+                              borderColor: isSelected ? cat.color : 'rgba(255, 255, 255, 0.08)',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              color: isSelected ? 'var(--text-bright)' : 'var(--text-muted)',
+                              transition: 'all 0.2s ease',
+                              textAlign: 'left',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              width: '100%',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{cat.emoji}</span>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      Henüz bu tipte bir kategori bulunmuyor. Kategoriler sekmesinden ekleyebilirsiniz.
+                      Henüz bu tipte bir kategori bulunmuyor. Cüzdanlar sekmesinden ekleyebilirsiniz.
                     </div>
                   )}
                 </div>
@@ -1229,10 +1315,102 @@ export const Transactions: React.FC<TransactionsProps> = ({
       </div>
 
       {activeFeedTab === 'transactions' ? (
-        <div className="tx-feed">
-          {sortedTransactions.length > 0 ? (
-            sortedTransactions.map((tx) => {
-              const cat = categoryMap.get(tx.category_id);
+        <>
+          {/* Compact filters container */}
+          <div className="card muted" style={{ padding: '12px', marginBottom: '16px', fontSize: '0.8rem', textAlign: 'left' }}>
+            <div style={{ fontWeight: 700, marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>İşlem Filtreleri</span>
+              {(filterWalletId !== 'all' || filterStartDate || filterEndDate || filterMinAmount || filterMaxAmount) && (
+                <button 
+                  onClick={() => {
+                    setFilterWalletId('all');
+                    setFilterStartDate('');
+                    setFilterEndDate('');
+                    setFilterMinAmount('');
+                    setFilterMaxAmount('');
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#fca5a5',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    fontSize: '0.72rem',
+                    padding: 0
+                  }}
+                >
+                  Filtreleri Temizle
+                </button>
+              )}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.68rem', marginBottom: '2px', opacity: 0.8 }}>Cüzdan / Hesap</label>
+                <select
+                  className="form-control"
+                  value={filterWalletId}
+                  onChange={(e) => setFilterWalletId(e.target.value)}
+                  style={{ background: '#121826', padding: '4px 8px', fontSize: '0.75rem', height: 'auto', borderRadius: '6px' }}
+                >
+                  <option value="all">Tüm Hesaplar</option>
+                  {wallets.map((w) => (
+                    <option key={w.id} value={w.id}>{w.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.68rem', marginBottom: '2px', opacity: 0.8 }}>Başlangıç Tarihi</label>
+                <input
+                  type="date"
+                  className="form-control"
+                  value={filterStartDate}
+                  onChange={(e) => setFilterStartDate(e.target.value)}
+                  style={{ background: '#121826', padding: '4px 8px', fontSize: '0.75rem', height: 'auto', borderRadius: '6px' }}
+                />
+              </div>
+
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.68rem', marginBottom: '2px', opacity: 0.8 }}>Bitiş Tarihi</label>
+                <input
+                  type="date"
+                  className="form-control"
+                  value={filterEndDate}
+                  onChange={(e) => setFilterEndDate(e.target.value)}
+                  style={{ background: '#121826', padding: '4px 8px', fontSize: '0.75rem', height: 'auto', borderRadius: '6px' }}
+                />
+              </div>
+
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.68rem', marginBottom: '2px', opacity: 0.8 }}>Min Tutar</label>
+                <input
+                  type="number"
+                  placeholder="Min"
+                  className="form-control"
+                  value={filterMinAmount}
+                  onChange={(e) => setFilterMinAmount(e.target.value)}
+                  style={{ background: '#121826', padding: '4px 8px', fontSize: '0.75rem', height: 'auto', borderRadius: '6px' }}
+                />
+              </div>
+
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.68rem', marginBottom: '2px', opacity: 0.8 }}>Max Tutar</label>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  className="form-control"
+                  value={filterMaxAmount}
+                  onChange={(e) => setFilterMaxAmount(e.target.value)}
+                  style={{ background: '#121826', padding: '4px 8px', fontSize: '0.75rem', height: 'auto', borderRadius: '6px' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="tx-feed">
+            {sortedTransactions.length > 0 ? (
+              sortedTransactions.map((tx) => {
+                const cat = resolveTxCategory(tx);
               const w = walletMap.get(tx.wallet_id);
               const isActive = activeTxId === tx.id;
 
@@ -1387,6 +1565,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
             </div>
           )}
         </div>
+        </>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
           {debts.length > 0 ? (

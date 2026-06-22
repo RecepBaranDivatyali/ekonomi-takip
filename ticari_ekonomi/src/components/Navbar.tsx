@@ -10,10 +10,10 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, hasBorsaWallet, hasDovizMadenWallet }) => {
   const navItems = [
     { id: 'dashboard', label: 'Özet', icon: <FiPieChart /> },
-    { id: 'transactions', label: 'İşlemler', icon: <FiList /> },
     { id: 'wallets', label: 'Cüzdanlar', icon: <FiCreditCard /> },
-    ...(hasBorsaWallet ? [{ id: 'borsa', label: 'Borsa', icon: <FiTrendingUp /> }] : []),
+    { id: 'transactions', label: 'İşlemler', icon: <FiList /> },
     ...(hasDovizMadenWallet ? [{ id: 'doviz', label: 'Döviz/Maden', icon: <FiDollarSign /> }] : []),
+    ...(hasBorsaWallet ? [{ id: 'borsa', label: 'Borsa', icon: <FiTrendingUp /> }] : []),
   ];
 
   return (

@@ -248,6 +248,47 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return Object.values(expenseByCat);
   }, [filteredTransactions, categoryMap, walletMap, selectedWalletId, rates]);
 
+  // Resolve category helper (handles null/automatic categories for Borsa & Döviz)
+  const resolveTxCategory = React.useCallback((tx: any) => {
+    const cat = categoryMap.get(tx.category_id);
+    const isOther = cat && (cat.name === 'Diğer' || cat.id === 'diger-fallback');
+
+    if (cat && !isOther) return cat;
+
+    const w = walletMap.get(tx.wallet_id);
+    const desc = (tx.description || '').toLowerCase();
+
+    if ((w && (w.type === 'Borsa_TRY' || w.type === 'Borsa_USD')) || desc.includes('hisse') || desc.includes('borsa')) {
+      return {
+        id: 'borsa-fallback',
+        name: 'Borsa / Yatırım',
+        emoji: '📈',
+        color: '#84CC16',
+        type: tx.amount < 0 ? 'Gider' : 'Gelir'
+      };
+    }
+
+    if ((w && ['Dolar', 'Euro', 'Altın', 'Gümüş'].includes(w.type)) || desc.includes('döviz') || desc.includes('altın') || desc.includes('gümüş') || desc.includes('kur ')) {
+      return {
+        id: 'doviz-fallback',
+        name: 'Döviz / Maden',
+        emoji: '💱',
+        color: '#3B82F6',
+        type: tx.amount < 0 ? 'Gider' : 'Gelir'
+      };
+    }
+
+    if (cat) return cat;
+
+    return {
+      id: 'diger-fallback',
+      name: 'Diğer',
+      emoji: '🪙',
+      color: '#64748B',
+      type: tx.amount < 0 ? 'Gider' : 'Gelir'
+    };
+  }, [categoryMap, walletMap]);
+
   // Recent 3 transactions
   const recentTransactions = React.useMemo(() => {
     return [...filteredTransactions]
@@ -478,7 +519,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="tx-feed">
         {recentTransactions.length > 0 ? (
           recentTransactions.map((tx) => {
-            const cat = categoryMap.get(tx.category_id);
+            const cat = resolveTxCategory(tx);
             const txWallet = walletMap.get(tx.wallet_id);
             return (
               <div key={tx.id} className="tx-item" style={{ cursor: 'default' }}>

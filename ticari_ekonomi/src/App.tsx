@@ -9,6 +9,7 @@ import { Categories } from './components/Categories';
 import { Tags } from './components/Tags';
 import { Borsa } from './components/Borsa';
 import { DovizMaden } from './components/DovizMaden';
+import { WalletDetails, CategoryDetails, TagDetails } from './components/ItemDetails';
 import { fetchAllRatesData, fetchLiveStockPrices, DEFAULT_RATES } from './services/currencyService';
 import type { ExchangeRates, CurrencyRate } from './services/currencyService';
 import { FiAlertCircle } from 'react-icons/fi';
@@ -90,6 +91,9 @@ function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [debts, setDebts] = useState<Debt[]>([]);
   const [userStocks, setUserStocks] = useState<UserStock[]>([]);
+
+  // Details Navigation State
+  const [activeDetails, setActiveDetails] = useState<{ type: 'wallet' | 'category' | 'tag'; id: string } | null>(null);
 
   // Simulated & live BIST stock prices and changes
   const [stockPrices, setStockPrices] = useState<{ [key: string]: { price: number; change: number } }>({
@@ -406,6 +410,11 @@ function App() {
     }
   }, [session, fetchUserData]);
 
+  // Reset details view when switching tabs
+  useEffect(() => {
+    setActiveDetails(null);
+  }, [activeTab]);
+
   const handleSignOut = async () => {
     if (window.confirm('Oturumu kapatmak istediğinize emin misiniz?')) {
       await supabase.auth.signOut();
@@ -581,27 +590,60 @@ function App() {
               )}
       
               {activeTab === 'wallets' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                  <Wallets
-                    wallets={computedWallets}
-                    onRefreshData={handleRefresh}
-                    userId={session.user.id}
-                    rates={rates}
-                  />
-                  <Tags
-                    tags={tags}
-                    transactions={transactions}
-                    categories={categories}
-                    wallets={computedWallets}
-                    onRefreshData={handleRefresh}
-                    userId={session.user.id}
-                  />
-                  <Categories
-                    categories={categories}
-                    onRefreshData={handleRefresh}
-                    userId={session.user.id}
-                  />
-                </div>
+                activeDetails ? (
+                  activeDetails.type === 'wallet' ? (
+                    <WalletDetails
+                      walletId={activeDetails.id}
+                      wallets={computedWallets}
+                      transactions={transactions}
+                      categories={categories}
+                      tags={tags}
+                      onBack={() => setActiveDetails(null)}
+                    />
+                  ) : activeDetails.type === 'category' ? (
+                    <CategoryDetails
+                      categoryId={activeDetails.id}
+                      categories={categories}
+                      transactions={transactions}
+                      wallets={computedWallets}
+                      onBack={() => setActiveDetails(null)}
+                    />
+                  ) : (
+                    <TagDetails
+                      tagId={activeDetails.id}
+                      tags={tags}
+                      transactions={transactions}
+                      wallets={computedWallets}
+                      categories={categories}
+                      onBack={() => setActiveDetails(null)}
+                    />
+                  )
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                    <Wallets
+                      wallets={computedWallets}
+                      onRefreshData={handleRefresh}
+                      userId={session.user.id}
+                      rates={rates}
+                      onViewDetails={(id) => setActiveDetails({ type: 'wallet', id })}
+                    />
+                    <Tags
+                      tags={tags}
+                      transactions={transactions}
+                      categories={categories}
+                      wallets={computedWallets}
+                      onRefreshData={handleRefresh}
+                      userId={session.user.id}
+                      onViewDetails={(id) => setActiveDetails({ type: 'tag', id })}
+                    />
+                    <Categories
+                      categories={categories}
+                      onRefreshData={handleRefresh}
+                      userId={session.user.id}
+                      onViewDetails={(id) => setActiveDetails({ type: 'category', id })}
+                    />
+                  </div>
+                )
               )}
       
               {activeTab === 'borsa' && (

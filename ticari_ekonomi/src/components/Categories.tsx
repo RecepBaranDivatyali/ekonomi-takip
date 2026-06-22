@@ -15,6 +15,7 @@ interface CategoriesProps {
   categories: Category[];
   onRefreshData: () => void;
   userId: string;
+  onViewDetails?: (id: string) => void;
 }
 
 const EMOJIS = [
@@ -39,6 +40,7 @@ export const Categories: React.FC<CategoriesProps> = ({
   categories,
   onRefreshData,
   userId,
+  onViewDetails,
 }) => {
   // Form States
   const [name, setName] = useState('');
@@ -151,7 +153,9 @@ export const Categories: React.FC<CategoriesProps> = ({
                 padding: '10px 14px',
                 borderRadius: '14px',
                 fontSize: '0.85rem',
+                cursor: onViewDetails ? 'pointer' : 'default',
               }}
+              onClick={() => onViewDetails && onViewDetails(cat.id)}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '1.15rem' }}>{cat.emoji}</span>
@@ -170,7 +174,10 @@ export const Categories: React.FC<CategoriesProps> = ({
               {!isSystem && (
                 <button
                   type="button"
-                  onClick={() => handleDeleteCategory(cat.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteCategory(cat.id);
+                  }}
                   style={{
                     background: 'none',
                     border: 'none',

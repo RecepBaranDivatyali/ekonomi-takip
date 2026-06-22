@@ -21,6 +21,7 @@ interface WalletsProps {
   onRefreshData: () => void;
   userId: string;
   rates: ExchangeRates;
+  onViewDetails?: (id: string) => void;
 }
 
 const COLORS = [
@@ -34,7 +35,7 @@ const COLORS = [
   '#84cc16', // lime
 ];
 
-export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId, rates }) => {
+export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId, rates, onViewDetails }) => {
   const [name, setName] = useState('');
   const [balance, setBalance] = useState('');
   const [type, setType] = useState<Wallet['type']>('Vadesiz');
@@ -276,10 +277,11 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
               key={w.id}
               className="tx-item"
               style={{
-                cursor: 'default',
+                cursor: onViewDetails ? 'pointer' : 'default',
                 borderColor: `rgba(255, 255, 255, 0.05)`,
                 borderLeft: `4px solid ${w.color}`,
               }}
+              onClick={() => onViewDetails && onViewDetails(w.id)}
             >
               <div className="tx-left">
                 <div
@@ -352,7 +354,10 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
                 <button
                   type="button"
                   className="circle-action-btn edit"
-                  onClick={() => handleStartEditWallet(w)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleStartEditWallet(w);
+                  }}
                   title="Cüzdanı Düzenle"
                   style={{
                     display: 'flex',
@@ -372,7 +377,10 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
                 <button
                   type="button"
                   className="circle-action-btn delete"
-                  onClick={() => handleDeleteWallet(w.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteWallet(w.id);
+                  }}
                   title="Cüzdanı Sil"
                 >
                   <FiTrash2 />
