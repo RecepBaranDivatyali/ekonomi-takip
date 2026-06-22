@@ -60,6 +60,29 @@ interface TransactionsProps {
   userId: string;
 }
 
+const getWalletEmoji = (type: string) => {
+  switch (type) {
+    case 'Vadesiz':
+    case 'Vadeli':
+      return '🏦';
+    case 'Dolar':
+      return '💵';
+    case 'Euro':
+      return '💶';
+    case 'Altın':
+      return '🟡';
+    case 'Gümüş':
+      return '⚪';
+    case 'Borsa_TRY':
+    case 'Borsa_USD':
+      return '📈';
+    case 'Kredi_Karti':
+      return '💳';
+    default:
+      return '💼';
+  }
+};
+
 export const Transactions: React.FC<TransactionsProps> = ({
   wallets,
   categories,
@@ -1431,13 +1454,13 @@ export const Transactions: React.FC<TransactionsProps> = ({
                       <div
                         className="badge-category"
                         style={{
-                          backgroundColor: `${cat?.color || '#64748b'}15`,
-                          color: cat?.color || '#64748b',
-                          borderColor: `${cat?.color || '#64748b'}30`,
+                          backgroundColor: `${w?.color || '#64748b'}15`,
+                          color: w?.color || '#64748b',
+                          borderColor: `${w?.color || '#64748b'}30`,
                         }}
                       >
-                        <span>{cat?.emoji || '🪙'}</span>
-                        <span>{cat?.name || 'Diğer'}</span>
+                        <span>{w ? getWalletEmoji(w.type) : '💼'}</span>
+                        <span>{w?.name || 'Bilinmeyen Cüzdan'}</span>
                       </div>
                       <div className="tx-details">
                         <span className="tx-description">{tx.description || 'Açıklama yok'}</span>
@@ -1451,12 +1474,12 @@ export const Transactions: React.FC<TransactionsProps> = ({
                           <span
                             style={{
                               fontSize: '0.62rem',
-                              color: w?.color || 'var(--text-muted)',
+                              color: cat?.color || 'var(--text-muted)',
                               fontWeight: 700,
                               textTransform: 'uppercase',
                             }}
                           >
-                            • {w?.name || 'Bilinmeyen Cüzdan'}
+                            • {cat?.emoji || '🪙'} {cat?.name || 'Diğer'}
                           </span>
                           {tx.tag_id && tagMap.get(tx.tag_id) && (() => {
                             const tag = tagMap.get(tx.tag_id)!;

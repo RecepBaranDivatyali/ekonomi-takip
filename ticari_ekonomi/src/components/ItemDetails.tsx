@@ -52,6 +52,29 @@ interface Transaction {
   time_range: string;
 }
 
+const getWalletEmoji = (type: string) => {
+  switch (type) {
+    case 'Vadesiz':
+    case 'Vadeli':
+      return '🏦';
+    case 'Dolar':
+      return '💵';
+    case 'Euro':
+      return '💶';
+    case 'Altın':
+      return '🟡';
+    case 'Gümüş':
+      return '⚪';
+    case 'Borsa_TRY':
+    case 'Borsa_USD':
+      return '📈';
+    case 'Kredi_Karti':
+      return '💳';
+    default:
+      return '💼';
+  }
+};
+
 // Global dynamic category resolver helper (matches Dashboard/Transactions fallback)
 const resolveTxCategory = (tx: Transaction, categories: Category[], wallets: Wallet[]) => {
   const cat = categories.find(c => c.id === tx.category_id);
@@ -414,19 +437,29 @@ export const WalletDetails: React.FC<WalletDetailsProps> = ({
                   <div
                     className="badge-category"
                     style={{
-                      backgroundColor: `${cat.color}15`,
-                      color: cat.color,
-                      borderColor: `${cat.color}30`,
+                      backgroundColor: `${wallet.color}15`,
+                      color: wallet.color,
+                      borderColor: `${wallet.color}30`,
                     }}
                   >
-                    <span>{cat.emoji}</span>
-                    <span>{cat.name}</span>
+                    <span>{getWalletEmoji(wallet.type)}</span>
+                    <span>{wallet.name}</span>
                   </div>
                   <div className="tx-details">
                     <span className="tx-description">{tx.description || 'Açıklama yok'}</span>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '2px' }}>
                       <span className="tx-date">
                         {new Date(tx.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '0.62rem',
+                          color: cat.color,
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        • {cat.emoji} {cat.name}
                       </span>
                       <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>
                         <FiClock style={{ verticalAlign: 'middle', marginRight: '2px' }} />
@@ -661,13 +694,13 @@ export const CategoryDetails: React.FC<CategoryDetailsProps> = ({
                   <div
                     className="badge-category"
                     style={{
-                      backgroundColor: `${category.color}15`,
-                      color: category.color,
-                      borderColor: `${category.color}30`,
+                      backgroundColor: `${w?.color || '#64748b'}15`,
+                      color: w?.color || '#64748b',
+                      borderColor: `${w?.color || '#64748b'}30`,
                     }}
                   >
-                    <span>{category.emoji}</span>
-                    <span>{category.name}</span>
+                    <span>{w ? getWalletEmoji(w.type) : '💼'}</span>
+                    <span>{w?.name || 'Hesap'}</span>
                   </div>
                   <div className="tx-details">
                     <span className="tx-description">{tx.description || 'Açıklama yok'}</span>
@@ -675,8 +708,15 @@ export const CategoryDetails: React.FC<CategoryDetailsProps> = ({
                       <span className="tx-date">
                         {new Date(tx.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}
                       </span>
-                      <span style={{ fontSize: '0.62rem', color: w?.color || 'var(--text-muted)', fontWeight: 700 }}>
-                        • {w?.name || 'Hesap'}
+                      <span
+                        style={{
+                          fontSize: '0.62rem',
+                          color: category.color,
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        • {category.emoji} {category.name}
                       </span>
                       <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>
                         <FiClock style={{ verticalAlign: 'middle', marginRight: '2px', marginLeft: '4px' }} />
@@ -946,13 +986,13 @@ export const TagDetails: React.FC<TagDetailsProps> = ({
                   <div
                     className="badge-category"
                     style={{
-                      backgroundColor: `${cat.color}15`,
-                      color: cat.color,
-                      borderColor: `${cat.color}30`,
+                      backgroundColor: `${w?.color || '#64748b'}15`,
+                      color: w?.color || '#64748b',
+                      borderColor: `${w?.color || '#64748b'}30`,
                     }}
                   >
-                    <span>{cat.emoji}</span>
-                    <span>{cat.name}</span>
+                    <span>{w ? getWalletEmoji(w.type) : '💼'}</span>
+                    <span>{w?.name || 'Hesap'}</span>
                   </div>
                   <div className="tx-details">
                     <span className="tx-description">{tx.description || 'Açıklama yok'}</span>
@@ -960,8 +1000,15 @@ export const TagDetails: React.FC<TagDetailsProps> = ({
                       <span className="tx-date">
                         {new Date(tx.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}
                       </span>
-                      <span style={{ fontSize: '0.62rem', color: w?.color || 'var(--text-muted)', fontWeight: 700 }}>
-                        • {w?.name || 'Hesap'}
+                      <span
+                        style={{
+                          fontSize: '0.62rem',
+                          color: cat.color,
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        • {cat.emoji} {cat.name}
                       </span>
                       <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>
                         <FiClock style={{ verticalAlign: 'middle', marginRight: '2px', marginLeft: '4px' }} />
