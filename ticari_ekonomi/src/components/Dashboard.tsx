@@ -351,6 +351,47 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
+      {/* Live Rates Ticker */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '6px',
+        marginBottom: '16px',
+      }}>
+        {[
+          { label: 'Dolar', symbol: '$', value: rates.USD, change: rates.USDChange, decimals: 2 },
+          { label: 'Euro', symbol: '€', value: rates.EUR, change: rates.EURChange, decimals: 2 },
+          { label: 'Altın', symbol: '₺', value: rates.Altın, change: rates.AltınChange, decimals: 0 },
+          { label: 'Gümüş', symbol: '₺', value: rates.Gümüş, change: rates.GümüşChange, decimals: 2 },
+        ].map((item) => {
+          const isUp = item.change >= 0;
+          return (
+            <div key={item.label} style={{
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: '10px',
+              padding: '8px 6px',
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>
+                {item.label}
+              </div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-bright)' }}>
+                {item.symbol}{item.value.toLocaleString('tr-TR', { minimumFractionDigits: item.decimals, maximumFractionDigits: item.decimals })}
+              </div>
+              <div style={{
+                fontSize: '0.55rem',
+                fontWeight: 700,
+                color: isUp ? '#10b981' : '#ef4444',
+                marginTop: '2px',
+              }}>
+                {isUp ? '▲' : '▼'} {Math.abs(item.change).toFixed(2)}%
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Charts Section */}
       <div className="card muted" style={{ minHeight: '260px', padding: '14px 10px 10px 10px' }}>
         <div className="card-title" style={{ textAlign: 'center', marginBottom: '8px' }}>

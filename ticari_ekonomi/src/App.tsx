@@ -183,7 +183,7 @@ function App() {
     };
 
     updateRates(); // Initial fetch
-    const interval = setInterval(updateRates, 60000); // Poll every 60 seconds
+    const interval = setInterval(updateRates, 30000); // Poll every 30 seconds
 
     return () => clearInterval(interval);
   }, []);
