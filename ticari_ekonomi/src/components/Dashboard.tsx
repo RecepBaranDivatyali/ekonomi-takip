@@ -259,12 +259,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const desc = (tx.description || '').toLowerCase();
 
     if ((w && (w.type === 'Borsa_TRY' || w.type === 'Borsa_USD')) || desc.includes('hisse') || desc.includes('borsa')) {
+      const isSell = desc.includes('satış') || desc.includes('satisi') || desc.includes('satışı') || desc.includes('temettü') || desc.includes('gelir') || desc.includes('giriş');
       return {
         id: 'borsa-fallback',
         name: 'Borsa / Yatırım',
         emoji: '📈',
         color: '#84CC16',
-        type: tx.amount < 0 ? 'Gider' : 'Gelir'
+        type: isSell ? 'Gelir' : 'Gider'
       };
     }
 

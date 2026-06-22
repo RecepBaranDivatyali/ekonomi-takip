@@ -63,12 +63,13 @@ const resolveTxCategory = (tx: Transaction, categories: Category[], wallets: Wal
   const desc = (tx.description || '').toLowerCase();
 
   if ((w && (w.type === 'Borsa_TRY' || w.type === 'Borsa_USD')) || desc.includes('hisse') || desc.includes('borsa')) {
+    const isSell = desc.includes('satış') || desc.includes('satisi') || desc.includes('satışı') || desc.includes('temettü') || desc.includes('gelir') || desc.includes('giriş');
     return {
       id: 'borsa-fallback',
       name: 'Borsa / Yatırım',
       emoji: '📈',
       color: '#84CC16',
-      type: tx.amount < 0 ? 'Gider' : 'Gelir' as const
+      type: isSell ? 'Gelir' : 'Gider' as const
     };
   }
 
@@ -200,26 +201,59 @@ export const WalletDetails: React.FC<WalletDetailsProps> = ({
     return Object.values(dataMap);
   }, [walletTx, categories, wallets]);
 
-  // Reconstruct Balance Timeline (Ascending order)
+  // Reconstruct Daily Ending Balance Timeline
   const timelineData = useMemo(() => {
-    let bal = Number(wallet.balance);
-    const points = [{ date: 'Şimdi', balance: bal }];
-
+    // 1. Group daily net changes by raw date "YYYY-MM-DD"
+    const dailyChanges: { [dateStr: string]: number } = {};
     walletTx.forEach((tx) => {
       const cat = resolveTxCategory(tx, categories, wallets);
-      // Reverse transaction to step back
-      if (cat.type === 'Gelir') {
-        bal -= Number(tx.amount);
-      } else {
-        bal += Number(tx.amount);
-      }
-      points.push({
-        date: new Date(tx.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
-        balance: Number(bal.toFixed(2)),
-      });
+      const isIncome = cat.type === 'Gelir';
+      const amt = Number(tx.amount);
+      const change = isIncome ? amt : -amt;
+      
+      const dateStr = tx.date; // "YYYY-MM-DD"
+      dailyChanges[dateStr] = (dailyChanges[dateStr] || 0) + change;
     });
 
-    return points.reverse();
+    // 2. Sort dates in descending order (newest first) to step back in time
+    const sortedDates = Object.keys(dailyChanges).sort((a, b) => b.localeCompare(a));
+
+    // 3. Reconstruct balances backwards starting from current wallet.balance
+    let bal = Number(wallet.balance);
+    const points: { date: string; balance: number }[] = [];
+
+    // Push the current balance as 'Şimdi'
+    points.push({
+      date: 'Şimdi',
+      balance: bal
+    });
+
+    sortedDates.forEach((dateStr) => {
+      const change = dailyChanges[dateStr];
+      const label = new Date(dateStr).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+      
+      points.push({
+        date: label,
+        balance: Number(bal.toFixed(2))
+      });
+      
+      // Step backwards: subtract this day's net change to find the balance at the end of the previous day
+      bal -= change;
+    });
+
+    // Add starting point showing the balance prior to the oldest recorded day
+    if (sortedDates.length > 0) {
+      const oldestDateStr = sortedDates[sortedDates.length - 1];
+      const oldestDate = new Date(oldestDateStr);
+      oldestDate.setDate(oldestDate.getDate() - 1);
+      const prevLabel = oldestDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+      points.push({
+        date: prevLabel,
+        balance: Number(bal.toFixed(2))
+      });
+    }
+
+    return points.reverse(); // chronological (oldest to newest)
   }, [walletTx, wallet.balance, categories, wallets]);
 
   return (
@@ -492,13 +526,15 @@ export const CategoryDetails: React.FC<CategoryDetailsProps> = ({
   const timelineData = useMemo(() => {
     const dataMap: { [key: string]: number } = {};
     categoryTx.forEach((tx) => {
-      const dateStr = new Date(tx.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+      const dateStr = tx.date; // "YYYY-MM-DD"
       dataMap[dateStr] = (dataMap[dateStr] || 0) + Number(tx.amount);
     });
-    return Object.keys(dataMap).map(date => ({
-      date,
-      tutar: Number(dataMap[date].toFixed(2))
-    })).reverse();
+    return Object.keys(dataMap)
+      .sort((a, b) => a.localeCompare(b))
+      .map(dateStr => ({
+        date: new Date(dateStr).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
+        tutar: Number(dataMap[dateStr].toFixed(2))
+      }));
   }, [categoryTx]);
 
   return (
@@ -752,13 +788,15 @@ export const TagDetails: React.FC<TagDetailsProps> = ({
   const timelineData = useMemo(() => {
     const dataMap: { [key: string]: number } = {};
     tagTx.forEach((tx) => {
-      const dateStr = new Date(tx.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+      const dateStr = tx.date; // "YYYY-MM-DD"
       dataMap[dateStr] = (dataMap[dateStr] || 0) + Number(tx.amount);
     });
-    return Object.keys(dataMap).map(date => ({
-      date,
-      tutar: Number(dataMap[date].toFixed(2))
-    })).reverse();
+    return Object.keys(dataMap)
+      .sort((a, b) => a.localeCompare(b))
+      .map(dateStr => ({
+        date: new Date(dateStr).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
+        tutar: Number(dataMap[dateStr].toFixed(2))
+      }));
   }, [tagTx]);
 
   return (
