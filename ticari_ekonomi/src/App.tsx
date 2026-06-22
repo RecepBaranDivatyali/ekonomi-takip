@@ -558,6 +558,7 @@ function App() {
                   wallets={computedWallets}
                   categories={categories}
                   transactions={transactions}
+                  debts={debts}
                   selectedWalletId={selectedWalletId}
                   setSelectedWalletId={setSelectedWalletId}
                   onSignOut={handleSignOut}

@@ -38,10 +38,23 @@ interface Transaction {
   date: string;
 }
 
+interface Debt {
+  id: string;
+  wallet_id: string;
+  category_id: string | null;
+  type: 'Alınacak' | 'Verilecek';
+  amount: number;
+  name: string;
+  due_date: string | null;
+  status: 'Bekliyor' | 'Ödendi';
+  created_at: string;
+}
+
 interface DashboardProps {
   wallets: Wallet[];
   categories: Category[];
   transactions: Transaction[];
+  debts: Debt[];
   selectedWalletId: string;
   setSelectedWalletId: (id: string) => void;
   onSignOut: () => void;
@@ -54,6 +67,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   wallets,
   categories,
   transactions,
+  debts,
   selectedWalletId,
   setSelectedWalletId,
   onSignOut,
@@ -141,7 +155,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [wallets, activeWallet, selectedWalletId, formatCurrency, rates]);
 
   // Calculate monthly income/expense totals for current filter
-  const { incomeTotal, expenseTotal } = React.useMemo(() => {
+  const { expenseTotal } = React.useMemo(() => {
     let inc = 0;
     let exp = 0;
     filteredTransactions.forEach((tx) => {
@@ -166,6 +180,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
     });
     return { incomeTotal: inc, expenseTotal: exp };
   }, [filteredTransactions, categoryMap, walletMap, selectedWalletId, rates]);
+
+  // Calculate pending receivables (Alınacak) and payables (Verilecek) totals for current filter
+  const { pendingIncomeTotal, pendingExpenseTotal } = React.useMemo(() => {
+    let inc = 0;
+    let exp = 0;
+
+    const filteredDebts = selectedWalletId === 'all'
+      ? debts
+      : debts.filter((d) => d.wallet_id === selectedWalletId);
+
+    filteredDebts.forEach((debt) => {
+      if (debt.status !== 'Bekliyor') return;
+
+      const isIncome = debt.type === 'Alınacak';
+      const txWallet = walletMap.get(debt.wallet_id);
+      let amt = Number(debt.amount);
+
+      // Convert to TRY if viewing all accounts consolidated
+      if (selectedWalletId === 'all' && txWallet) {
+        if (txWallet.type === 'Dolar' || txWallet.type === 'Borsa_USD') amt *= rates.USD;
+        else if (txWallet.type === 'Euro') amt *= rates.EUR;
+        else if (txWallet.type === 'Altın') amt *= rates.Altın;
+        else if (txWallet.type === 'Gümüş') amt *= rates.Gümüş;
+      }
+
+      if (isIncome) {
+        inc += amt;
+      } else {
+        exp += amt;
+      }
+    });
+    return { pendingIncomeTotal: inc, pendingExpenseTotal: exp };
+  }, [debts, walletMap, selectedWalletId, rates]);
 
   // Recharts Chart Data (Expenses by Category)
   const chartData = React.useMemo(() => {
@@ -343,13 +390,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="total-balance-amount">{displayBalanceStr}</div>
 
         <div className="balance-flow-row">
-          <div className="flow-pill income">
+          <div className="flow-pill income" title="Bekleyen Alınacaklar (Eklenecek)">
             <FiTrendingUp />
-            <span>{formatCurrency(incomeTotal, activeWallet?.type)}</span>
+            <span>{formatCurrency(pendingIncomeTotal, activeWallet?.type)}</span>
           </div>
-          <div className="flow-pill expense">
+          <div className="flow-pill expense" title="Bekleyen Verilecekler (Ödenecek / Gidecek)">
             <FiTrendingDown />
-            <span>{formatCurrency(expenseTotal, activeWallet?.type)}</span>
+            <span>{formatCurrency(pendingExpenseTotal, activeWallet?.type)}</span>
           </div>
         </div>
       </div>
