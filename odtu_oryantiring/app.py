@@ -11,8 +11,18 @@ import altair as alt
 DB_PATH = 'ekonomi.db'
 
 # Supabase configuration (optional fallback to SQLite)
-SUPABASE_URL = st.secrets.get("SUPABASE_URL") or os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = st.secrets.get("SUPABASE_KEY") or os.environ.get("SUPABASE_KEY")
+try:
+    SUPABASE_URL = st.secrets.get("SUPABASE_URL")
+    SUPABASE_KEY = st.secrets.get("SUPABASE_KEY")
+except Exception:
+    SUPABASE_URL = None
+    SUPABASE_KEY = None
+
+if not SUPABASE_URL:
+    SUPABASE_URL = os.environ.get("SUPABASE_URL")
+if not SUPABASE_KEY:
+    SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
 USE_SUPABASE = bool(SUPABASE_URL and SUPABASE_KEY)
 
 class SupabaseClient:
