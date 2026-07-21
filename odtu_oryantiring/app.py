@@ -1833,8 +1833,6 @@ def inject_custom_css():
 
 
 # --- INITIALIZE APP ---
-init_db()
-
 st.set_page_config(
     page_title="ODTÜ Oryantiring Finans Takip",
     page_icon="🧭",
@@ -1849,9 +1847,52 @@ inject_custom_css()
 today_date = datetime.now().date()
 today_str = today_date.strftime('%Y-%m-%d')
 
+db_error = None
+try:
+    init_db()
+except Exception as e:
+    db_error = e
 
-# --- SIDEBAR & GLOBAL CONTROLS ---
+current_active_rate = 0.41
+if not db_error:
+    try:
+        # Read active rate for today from db
+        if USE_SUPABASE:
+            rate_logs = get_rate_logs()
+            row = next((r for r in rate_logs if r['date'] <= today_str), None)
+            current_active_rate = row['rate'] if row else 0.41
+        else:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT rate FROM interest_rate_logs WHERE date <= ? ORDER BY date DESC LIMIT 1", (today_str,))
+            row = cursor.fetchone()
+            current_active_rate = row['rate'] if row else 0.41
+            conn.close()
+    except Exception as e:
+        db_error = e
 
+if db_error:
+    st.error("🚨 **Veritabanı Bağlantı Hatası!**")
+    st.markdown(f"""
+    Uygulama Supabase bulut veritabanına bağlanırken bir hata ile karşılaştı.
+    
+    ### 💡 Olası Neden ve Çözüm:
+    **Supabase Projeniz Uykuda (Paused) Olabilir:**
+    Supabase, ücretsiz planındaki veritabanlarını 7 gün boyunca aktif bir işlem yapılmadığında otomatik olarak **duraklatır (pause)**.
+    
+    **Nasıl Düzeltilir?**
+    1. **[Supabase Dashboard (cwuwhldshxeewcxrsysl)](https://supabase.com/dashboard/project/cwuwhldshxeewcxrsysl)** adresine gidin.
+    2. Supabase hesabınızla giriş yapın.
+    3. Projenizin duraklatıldığını göreceksiniz. **"Restore project"** (Projeyi Geri Yükle) butonuna tıklayın.
+    4. Yaklaşık 1-2 dakika sonra veritabanınız aktif hale gelecektir. Ardından bu sayfayı yenileyerek uygulamayı kullanmaya başlayabilirsiniz.
+    
+    ---
+    *Hata Detayı (Teknik Bilgi):* `{str(db_error)}`
+    """)
+    st.stop()
+
+
+# Navigation
 st.sidebar.markdown(
     """
     <div style='text-align: center; margin-bottom: 25px;'>
@@ -1861,21 +1902,6 @@ st.sidebar.markdown(
     """, 
     unsafe_allow_html=True
 )
-
-# Read active rate for today from db
-if USE_SUPABASE:
-    rate_logs = get_rate_logs()
-    row = next((r for r in rate_logs if r['date'] <= today_str), None)
-    current_active_rate = row['rate'] if row else 0.41
-else:
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT rate FROM interest_rate_logs WHERE date <= ? ORDER BY date DESC LIMIT 1", (today_str,))
-    row = cursor.fetchone()
-    current_active_rate = row['rate'] if row else 0.41
-    conn.close()
-
-# Navigation
 st.sidebar.markdown("---")
 st.sidebar.subheader("🧭 Menü")
 if "menu_selection" not in st.session_state:

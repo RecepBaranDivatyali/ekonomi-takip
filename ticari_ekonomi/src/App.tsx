@@ -82,6 +82,7 @@ function App() {
   const [session, setSession] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
+  const [initialFetchDone, setInitialFetchDone] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
 
   // DB States
@@ -95,8 +96,50 @@ function App() {
   // Details Navigation State
   const [activeDetails, setActiveDetails] = useState<{ type: 'wallet' | 'category' | 'tag'; id: string } | null>(null);
 
-  // Simulated & live BIST stock prices and changes
+  // Synchronize React navigation state with browser history (popstate / pushState)
+  useEffect(() => {
+    if (window.history.state === null) {
+      window.history.replaceState({ activeTab: 'dashboard', activeDetails: null }, '', '');
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state) {
+        setActiveTab(event.state.activeTab || 'dashboard');
+        setActiveDetails(event.state.activeDetails || null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  // Monitor tab and details changes to push/pop history
+  useEffect(() => {
+    const histState = window.history.state;
+    if (!histState) return;
+
+    const tabChanged = histState.activeTab !== activeTab;
+    const detailsChanged = (histState.activeDetails?.type !== activeDetails?.type) ||
+                           (histState.activeDetails?.id !== activeDetails?.id);
+
+    if (tabChanged || detailsChanged) {
+      if (!tabChanged && histState.activeDetails !== null && activeDetails === null) {
+        window.history.back();
+      } else {
+        window.history.pushState({ activeTab, activeDetails }, '', '');
+      }
+    }
+  }, [activeTab, activeDetails]);
+
   const [stockPrices, setStockPrices] = useState<{ [key: string]: { price: number; change: number } }>({
+    // BIST Indices Fallbacks
+    BIST100: { price: 10431.21, change: 0.50 },
+    BIST30: { price: 11588.46, change: 0.60 },
+    XU100: { price: 10431.21, change: 0.50 },
+    XU030: { price: 11588.46, change: 0.60 },
+
     // Turkish Funds Fallbacks
     AFT: { price: 1.048200, change: 0.85 },
     MAC: { price: 0.838200, change: -0.42 },
@@ -230,10 +273,13 @@ function App() {
     const alertMessages: string[] = [];
 
     for (const wallet of vadeliWallets) {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = new Date().toLocaleDateString('sv-SE');
       const todayTime = new Date(todayStr).getTime();
       const lastInterestDateVal = wallet.last_interest_date || wallet.created_at || todayStr;
-      const lastInterestTime = new Date(lastInterestDateVal.split('T')[0]).getTime();
+      const lastInterestDateStr = lastInterestDateVal.includes('T')
+        ? new Date(lastInterestDateVal).toLocaleDateString('sv-SE')
+        : lastInterestDateVal;
+      const lastInterestTime = new Date(lastInterestDateStr).getTime();
       const maturityMs = wallet.maturity_days * 24 * 60 * 60 * 1000;
 
       if (todayTime >= lastInterestTime + maturityMs) {
@@ -253,7 +299,7 @@ function App() {
           tempLastInterestTime += maturityMs;
           cycles++;
 
-          const cycleDateStr = new Date(tempLastInterestTime).toISOString().split('T')[0];
+          const cycleDateStr = new Date(tempLastInterestTime).toLocaleDateString('sv-SE');
           interestTxLog.push({
             netInterest,
             dateStr: cycleDateStr,
@@ -262,7 +308,7 @@ function App() {
 
         if (cycles > 0) {
           hasUpdates = true;
-          const finalLastInterestDate = new Date(tempLastInterestTime).toISOString().split('T')[0];
+          const finalLastInterestDate = new Date(tempLastInterestTime).toLocaleDateString('sv-SE');
 
           // 1. Update wallet balance and last_interest_date in Supabase
           const { error: walletError } = await supabase
@@ -315,75 +361,97 @@ function App() {
     }
     return false;
   };
+  const checkAndCleanDuplicateTransactions = async (
+    txsList: Transaction[],
+    walletsList: Wallet[],
+    userId: string
+  ) => {
+    console.log('[Deduplication] User ID:', userId);
+    const dovizMadenWallets = walletsList.filter(
+      w => ['Dolar', 'Euro', 'Altın', 'Gümüş'].includes(w.type)
+    );
+    let cleanedAny = false;
+    for (const w of dovizMadenWallets) {
+      const wTxs = txsList.filter(
+        tx => tx.wallet_id === w.id && 
+        tx.description && 
+        tx.description.includes('Başlangıç Bakiyesi')
+      );
+
+      if (wTxs.length > 1) {
+        console.log(`[Deduplication App] Found ${wTxs.length} duplicate starting balance txs for wallet: ${w.name}`);
+        // Keep the first one, delete the rest
+        const toDelete = wTxs.slice(1);
+        for (const tx of toDelete) {
+          const { error } = await supabase.from('transactions').delete().eq('id', tx.id);
+          if (!error) {
+            cleanedAny = true;
+          }
+        }
+      }
+    }
+    return cleanedAny;
+  };
 
   // Fetch all user data from Supabase
+  // Fetch all user data from Supabase in parallel
   const fetchUserData = useCallback(async () => {
     setDataLoading(true);
     try {
-      // 1. Fetch Wallets
-      const { data: walletsData, error: wError } = await supabase
-        .from('wallets')
-        .select('*')
-        .order('name', { ascending: true });
+      const [
+        { data: walletsData, error: wError },
+        { data: categoriesData, error: cError },
+        { data: tagsData, error: tagError },
+        { data: transactionsData, error: tError },
+        { data: debtsData, error: dError },
+        { data: stocksData, error: sError }
+      ] = await Promise.all([
+        supabase.from('wallets').select('*').order('name', { ascending: true }),
+        supabase.from('categories').select('*').order('name', { ascending: true }),
+        supabase.from('tags').select('*').order('name', { ascending: true }),
+        supabase.from('transactions').select('*').order('date', { ascending: false }),
+        supabase.from('debts').select('*').order('created_at', { ascending: false }),
+        supabase.from('user_stocks').select('*').order('symbol', { ascending: true })
+      ]);
+
       if (wError) throw wError;
-      setWallets(walletsData || []);
-
-      // 2. Fetch Categories (Rls automatically filters defaults + custom)
-      const { data: categoriesData, error: cError } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name', { ascending: true });
       if (cError) throw cError;
-      setCategories(categoriesData || []);
-
-      // 3. Fetch Tags
-      const { data: tagsData, error: tagError } = await supabase
-        .from('tags')
-        .select('*')
-        .order('name', { ascending: true });
       if (tagError) throw tagError;
-      setTags(tagsData || []);
-
-      // 4. Fetch Transactions
-      const { data: transactionsData, error: tError } = await supabase
-        .from('transactions')
-        .select('*')
-        .order('date', { ascending: false });
       if (tError) throw tError;
-      setTransactions(transactionsData || []);
-
-      // 5. Fetch Debts
-      const { data: debtsData, error: dError } = await supabase
-        .from('debts')
-        .select('*')
-        .order('created_at', { ascending: false });
       if (dError) throw dError;
-      setDebts(debtsData || []);
-
-      // 6. Fetch User Stocks
-      const { data: stocksData, error: sError } = await supabase
-        .from('user_stocks')
-        .select('*')
-        .order('symbol', { ascending: true });
       if (sError) throw sError;
+
+      // Batch state updates
+      setWallets(walletsData || []);
+      setCategories(categoriesData || []);
+      setTags(tagsData || []);
+      setTransactions(transactionsData || []);
+      setDebts(debtsData || []);
       setUserStocks(stocksData || []);
+      setInitialFetchDone(true);
+
+      // Clean duplicate starting balances
+      if (session?.user?.id && walletsData && transactionsData) {
+        const didClean = await checkAndCleanDuplicateTransactions(transactionsData, walletsData, session.user.id);
+        if (didClean) {
+          const { data: updatedTxs } = await supabase.from('transactions').select('*').order('date', { ascending: false });
+          setTransactions(updatedTxs || []);
+        }
+      }
 
       // Check interest if not checked in this session yet
       if (session?.user?.id && !hasCheckedInterest && walletsData && categoriesData) {
         setHasCheckedInterest(true);
         const didUpdate = await checkAndProcessInterest(walletsData, categoriesData, session.user.id);
         if (didUpdate) {
-          // Re-fetch wallets and transactions since they were updated in database
-          const { data: updatedWallets } = await supabase
-            .from('wallets')
-            .select('*')
-            .order('name', { ascending: true });
+          const [
+            { data: updatedWallets },
+            { data: updatedTransactions }
+          ] = await Promise.all([
+            supabase.from('wallets').select('*').order('name', { ascending: true }),
+            supabase.from('transactions').select('*').order('date', { ascending: false })
+          ]);
           setWallets(updatedWallets || []);
-
-          const { data: updatedTransactions } = await supabase
-            .from('transactions')
-            .select('*')
-            .order('date', { ascending: false });
           setTransactions(updatedTransactions || []);
         }
       }
@@ -407,6 +475,7 @@ function App() {
       setDebts([]);
       setUserStocks([]);
       setHasCheckedInterest(false);
+      setInitialFetchDone(false);
     }
   }, [session, fetchUserData]);
 
@@ -461,7 +530,7 @@ function App() {
 
   // Dynamic wallets with simulated stock portfolio values
   const computedWallets = useMemo(() => {
-    return wallets.map(w => {
+    const mapped = wallets.map(w => {
       if (w.type === 'Borsa_TRY' || w.type === 'Borsa_USD') {
         const stocks = userStocks.filter(s => s.wallet_id === w.id);
         const stockVal = stocks.reduce((sum, s) => {
@@ -478,7 +547,18 @@ function App() {
       }
       return w;
     });
-  }, [wallets, userStocks, stockPrices]);
+
+    const getTlValue = (w: Wallet) => {
+      const bal = Number(w.balance);
+      if (w.type === 'Dolar' || w.type === 'Borsa_USD') return bal * rates.USD;
+      if (w.type === 'Euro') return bal * rates.EUR;
+      if (w.type === 'Altın') return bal * rates.Altın;
+      if (w.type === 'Gümüş') return bal * rates.Gümüş;
+      return bal;
+    };
+
+    return mapped.sort((a, b) => getTlValue(b) - getTlValue(a));
+  }, [wallets, userStocks, stockPrices, rates]);
 
   // If active tab is borsa but no borsa wallets exist, redirect to dashboard
   useEffect(() => {
@@ -501,7 +581,7 @@ function App() {
   }, [computedWallets, activeTab]);
 
   // Render Loading Screen
-  if (authLoading) {
+  if (authLoading || (session && !initialFetchDone)) {
     return (
       <div
         style={{
@@ -617,6 +697,7 @@ function App() {
                   debts={debts}
                   onRefreshData={handleRefresh}
                   userId={session.user.id}
+                  rates={rates}
                 />
               )}
       
@@ -630,6 +711,9 @@ function App() {
                       categories={categories}
                       tags={tags}
                       onBack={() => setActiveDetails(null)}
+                      rates={rates}
+                      stockPrices={stockPrices}
+                      userStocks={userStocks}
                     />
                   ) : activeDetails.type === 'category' ? (
                     <CategoryDetails

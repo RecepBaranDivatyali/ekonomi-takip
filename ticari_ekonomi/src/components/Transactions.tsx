@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import { FiPlus, FiTrash2, FiClock, FiAlertCircle, FiCheck, FiEdit2 } from 'react-icons/fi';
+import { type ExchangeRates, calculateWalletAssetBalances } from '../services/currencyService';
 
 interface Wallet {
   id: string;
@@ -58,6 +59,7 @@ interface TransactionsProps {
   debts: Debt[];
   onRefreshData: () => void;
   userId: string;
+  rates: ExchangeRates;
 }
 
 const getWalletEmoji = (type: string) => {
@@ -91,6 +93,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
   debts,
   onRefreshData,
   userId,
+  rates,
 }) => {
   // Form States
   const [txType, setTxType] = useState<'Gelir' | 'Gider'>('Gider');
@@ -99,7 +102,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
   const [tagId, setTagId] = useState<string>('');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(new Date().toLocaleDateString('sv-SE'));
   const [time, setTime] = useState(() => {
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, '0');
@@ -109,6 +112,36 @@ export const Transactions: React.FC<TransactionsProps> = ({
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [txAsset, setTxAsset] = useState<string>('TRY');
+
+  // Synchronize showAddForm state with browser history (popstate / pushState)
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state) {
+        setShowAddForm(!!event.state.showAddForm);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  // Monitor showAddForm state changes
+  useEffect(() => {
+    const histState = window.history.state;
+    if (!histState) return;
+
+    const histHasAddForm = !!histState.showAddForm;
+    if (showAddForm !== histHasAddForm) {
+      if (histHasAddForm && !showAddForm) {
+        window.history.back();
+      } else if (!histHasAddForm && showAddForm) {
+        window.history.pushState({ ...histState, showAddForm: true }, '', '');
+      }
+    }
+  }, [showAddForm]);
 
   // Debt Mode States
   const [isDebtMode, setIsDebtMode] = useState(false);
@@ -139,10 +172,26 @@ export const Transactions: React.FC<TransactionsProps> = ({
     setWalletId(tx.wallet_id);
     setCategoryId(tx.category_id);
     setTagId(tx.tag_id || '');
-    setDescription(tx.description || '');
+    // Remove the suffix from description input for cleaner user editing
+    const cleanedDesc = (tx.description || '').replace(/\s*\((dolar|euro|altın|altin|gümüş|gumus|usd|eur|gold|silver|try)\)/i, '');
+    setDescription(cleanedDesc);
     setDate(tx.date);
     setTime(tx.time_range);
     
+    // Parse the asset from description
+    const descLower = (tx.description || '').toLowerCase();
+    if (descLower.includes('euro') || descLower.includes('eur') || descLower.includes('€')) {
+      setTxAsset('EUR');
+    } else if (descLower.includes('dolar') || descLower.includes('usd') || descLower.includes('$')) {
+      setTxAsset('USD');
+    } else if (descLower.includes('altın') || descLower.includes('altin') || descLower.includes('gold')) {
+      setTxAsset('Altın');
+    } else if (descLower.includes('gümüş') || descLower.includes('gumus') || descLower.includes('silver')) {
+      setTxAsset('Gümüş');
+    } else {
+      setTxAsset('TRY');
+    }
+
     const cat = categories.find(c => c.id === tx.category_id);
     if (cat) {
       setTxType(cat.type);
@@ -182,7 +231,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
           }
         } else {
           if (finalBalance < 0) {
-            throw new Error(`Yetersiz bakiye! İşlem sonrası bakiye sıfırın altına düşemez. (Mevcut Bakiye: ${formatWalletBalance(oldWallet.balance, oldWallet.type)})`);
+            throw new Error(`Yetersiz bakiye! İşlem sonrası bakiye sıfırın altına düşemez. (Mevcut Bakiye: ${getWalletDisplayBalance(oldWallet)})`);
           }
         }
 
@@ -231,6 +280,16 @@ export const Transactions: React.FC<TransactionsProps> = ({
         if (newWalletErr) throw newWalletErr;
       }
 
+      const assetSuffix = txAsset === 'EUR' ? 'Euro' : txAsset === 'USD' ? 'Dolar' : txAsset === 'Altın' ? 'Altın' : txAsset === 'Gümüş' ? 'Gümüş' : '';
+      let finalDesc = description.trim().replace(/\s*\((dolar|euro|altın|altin|gümüş|gumus|usd|eur|gold|silver|try)\)/i, '');
+      if (assetSuffix) {
+        if (finalDesc) {
+          finalDesc = `${finalDesc} (${assetSuffix})`;
+        } else {
+          finalDesc = `${assetSuffix} ${txType === 'Gelir' ? 'Girişi' : 'Çıkışı'}`;
+        }
+      }
+
       const { error: txErr } = await supabase
         .from('transactions')
         .update({
@@ -238,7 +297,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
           category_id: categoryId,
           tag_id: tagId || null,
           amount: numAmount,
-          description: description.trim(),
+          description: finalDesc,
           date,
           time_range: time,
         })
@@ -249,7 +308,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
       setEditingTx(null);
       setAmount('');
       setDescription('');
-      setDate(new Date().toISOString().split('T')[0]);
+      setDate(new Date().toLocaleDateString('sv-SE'));
       setTagId('');
       onRefreshData();
     } catch (err: any) {
@@ -262,12 +321,27 @@ export const Transactions: React.FC<TransactionsProps> = ({
   const handleStartEditDebt = (debt: Debt) => {
     setEditingDebt(debt);
     setEditingTx(null);
-    setDebtName(debt.name);
+    const cleanedName = (debt.name || '').replace(/\s*\((dolar|euro|altın|altin|gümüş|gumus|usd|eur|gold|silver|try)\)/i, '');
+    setDebtName(cleanedName);
     setAmount(String(debt.amount));
     setWalletId(debt.wallet_id);
     setCategoryId(debt.category_id || '');
     setDebtDueDate(debt.due_date || '');
     setDebtType(debt.type);
+
+    const nameLower = (debt.name || '').toLowerCase();
+    if (nameLower.includes('euro') || nameLower.includes('eur') || nameLower.includes('€')) {
+      setTxAsset('EUR');
+    } else if (nameLower.includes('dolar') || nameLower.includes('usd') || nameLower.includes('$')) {
+      setTxAsset('USD');
+    } else if (nameLower.includes('altın') || nameLower.includes('altin') || nameLower.includes('gold')) {
+      setTxAsset('Altın');
+    } else if (nameLower.includes('gümüş') || nameLower.includes('gumus') || nameLower.includes('silver')) {
+      setTxAsset('Gümüş');
+    } else {
+      setTxAsset('TRY');
+    }
+
     setShowAddForm(false);
     setErrorMsg(null);
   };
@@ -283,6 +357,17 @@ export const Transactions: React.FC<TransactionsProps> = ({
     setErrorMsg(null);
 
     try {
+      const selectedWallet = wallets.find(w => w.id === walletId);
+      const isMultiAsset = selectedWallet && ['Dolar', 'Euro', 'Altın', 'Gümüş'].includes(selectedWallet.type);
+      const assetSuffix = isMultiAsset
+        ? (txAsset === 'EUR' ? 'Euro' : txAsset === 'USD' ? 'Dolar' : txAsset === 'Altın' ? 'Altın' : txAsset === 'Gümüş' ? 'Gümüş' : '')
+        : '';
+      
+      let finalName = debtName.trim().replace(/\s*\((dolar|euro|altın|altin|gümüş|gumus|usd|eur|gold|silver|try)\)/i, '');
+      if (assetSuffix) {
+        finalName = `${finalName} (${assetSuffix})`;
+      }
+
       const { error } = await supabase
         .from('debts')
         .update({
@@ -290,7 +375,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
           category_id: categoryId || null,
           type: debtType,
           amount: Number(amount),
-          name: debtName.trim(),
+          name: finalName,
           due_date: debtDueDate || null,
         })
         .eq('id', editingDebt.id);
@@ -364,18 +449,28 @@ export const Transactions: React.FC<TransactionsProps> = ({
         }
       } else {
         if (newBalance < 0) {
-          throw new Error(`Yetersiz bakiye! İşlem sonrası bakiye sıfırın altına düşemez. (Mevcut Bakiye: ${formatWalletBalance(selectedWallet.balance, selectedWallet.type)})`);
+          throw new Error(`Yetersiz bakiye! İşlem sonrası bakiye sıfırın altına düşemez. (Mevcut Bakiye: ${getWalletDisplayBalance(selectedWallet)})`);
         }
       }
 
       // 1. Insert transaction into Supabase
+      const assetSuffix = txAsset === 'EUR' ? 'Euro' : txAsset === 'USD' ? 'Dolar' : txAsset === 'Altın' ? 'Altın' : txAsset === 'Gümüş' ? 'Gümüş' : '';
+      let finalDesc = description.trim().replace(/\s*\((dolar|euro|altın|altin|gümüş|gumus|usd|eur|gold|silver|try)\)/i, '');
+      if (assetSuffix) {
+        if (finalDesc) {
+          finalDesc = `${finalDesc} (${assetSuffix})`;
+        } else {
+          finalDesc = `${assetSuffix} ${txType === 'Gelir' ? 'Girişi' : 'Çıkışı'}`;
+        }
+      }
+
       const { error: txError } = await supabase.from('transactions').insert({
         user_id: userId,
         wallet_id: walletId,
         category_id: categoryId,
         tag_id: tagId || null,
         amount: numAmount,
-        description: description.trim(),
+        description: finalDesc,
         date,
         time_range: time,
       });
@@ -393,7 +488,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
       // Reset form
       setAmount('');
       setDescription('');
-      setDate(new Date().toISOString().split('T')[0]);
+      setDate(new Date().toLocaleDateString('sv-SE'));
       setTime(() => {
         const now = new Date();
         const hours = String(now.getHours()).padStart(2, '0');
@@ -421,13 +516,24 @@ export const Transactions: React.FC<TransactionsProps> = ({
     setErrorMsg(null);
 
     try {
+      const selectedWallet = wallets.find(w => w.id === walletId);
+      const isMultiAsset = selectedWallet && ['Dolar', 'Euro', 'Altın', 'Gümüş'].includes(selectedWallet.type);
+      const assetSuffix = isMultiAsset
+        ? (txAsset === 'EUR' ? 'Euro' : txAsset === 'USD' ? 'Dolar' : txAsset === 'Altın' ? 'Altın' : txAsset === 'Gümüş' ? 'Gümüş' : '')
+        : '';
+      
+      let finalName = debtName.trim().replace(/\s*\((dolar|euro|altın|altin|gümüş|gumus|usd|eur|gold|silver|try)\)/i, '');
+      if (assetSuffix) {
+        finalName = `${finalName} (${assetSuffix})`;
+      }
+
       const { error } = await supabase.from('debts').insert({
         user_id: userId,
         wallet_id: walletId,
         category_id: categoryId || null,
         type: debtType,
         amount: Number(amount),
-        name: debtName.trim(),
+        name: finalName,
         due_date: debtDueDate || null,
         status: 'Bekliyor',
       });
@@ -470,7 +576,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
         }
       } else {
         if (newBalance < 0) {
-          throw new Error(`Yetersiz bakiye! Gelecek işlem gerçekleştirilemedi, hesap bakiyesi sıfırın altına düşemez. (Mevcut Bakiye: ${formatWalletBalance(wallet.balance, wallet.type)})`);
+          throw new Error(`Yetersiz bakiye! Gelecek işlem gerçekleştirilemedi, hesap bakiyesi sıfırın altına düşemez. (Mevcut Bakiye: ${getWalletDisplayBalance(wallet)})`);
         }
       }
 
@@ -489,7 +595,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
         category_id: debt.category_id || null,
         amount: numAmount,
         description: `${debt.name} - Gelecek İşlem Kapanışı (${debt.type})`,
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toLocaleDateString('sv-SE'),
         time_range: new Date().toTimeString().slice(0, 5),
       });
 
@@ -577,7 +683,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(val);
     }
@@ -585,7 +691,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
       return new Intl.NumberFormat('de-DE', {
         style: 'currency',
         currency: 'EUR',
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(val);
     }
@@ -599,7 +705,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
       return new Intl.NumberFormat('tr-TR', {
         style: 'currency',
         currency: 'TRY',
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(val) + ' (Borsa)';
     }
@@ -607,16 +713,89 @@ export const Transactions: React.FC<TransactionsProps> = ({
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(val) + ' (Borsa)';
     }
     return new Intl.NumberFormat('tr-TR', {
       style: 'currency',
       currency: 'TRY',
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(val);
+  };
+
+  const formatTransactionOrDebtAmount = (val: number, walletType: string | undefined, text: string) => {
+    if (!walletType) return '₺' + Number(val).toFixed(2);
+    
+    const textLower = (text || '').toLowerCase();
+    
+    if (walletType === 'Dolar') {
+      const isEuro = textLower.includes('euro') || textLower.includes('eur') || textLower.includes('€');
+      if (isEuro) {
+        return new Intl.NumberFormat('de-DE', {
+          style: 'currency',
+          currency: 'EUR',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(val);
+      }
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(val);
+    }
+    
+    if (walletType === 'Altın') {
+      const isSilver = textLower.includes('gümüş') || textLower.includes('gumus') || textLower.includes('silver');
+      if (isSilver) {
+        return `${Number(val).toFixed(2)} gr (Gümüş)`;
+      }
+      return `${Number(val).toFixed(2)} gr (Altın)`;
+    }
+
+    if (walletType === 'Euro') {
+      return new Intl.NumberFormat('de-DE', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(val);
+    }
+    if (walletType === 'Gümüş') {
+      return `${Number(val).toFixed(2)} gr (Gümüş)`;
+    }
+    if (walletType === 'Borsa_TRY') {
+      return new Intl.NumberFormat('tr-TR', {
+        style: 'currency',
+        currency: 'TRY',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(val) + ' (Borsa)';
+    }
+    if (walletType === 'Borsa_USD') {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(val) + ' (Borsa)';
+    }
+    return new Intl.NumberFormat('tr-TR', {
+      style: 'currency',
+      currency: 'TRY',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(val);
+  };
+
+  const getWalletDisplayBalance = (w: Wallet) => {
+    if (['Dolar', 'Euro', 'Altın', 'Gümüş'].includes(w.type)) {
+      return calculateWalletAssetBalances(w, transactions, rates).displayValue;
+    }
+    return formatWalletBalance(Number(w.balance), w.type);
   };
 
   // Maps
@@ -693,6 +872,33 @@ export const Transactions: React.FC<TransactionsProps> = ({
   const activeWallet = React.useMemo(() => {
     return wallets.find((w) => w.id === walletId);
   }, [wallets, walletId]);
+
+  useEffect(() => {
+    if (!activeWallet) return;
+    if (['Dolar', 'Euro'].includes(activeWallet.type)) {
+      if (txAsset !== 'USD' && txAsset !== 'EUR') {
+        setTxAsset(activeWallet.type === 'Euro' ? 'EUR' : 'USD');
+      }
+    } else if (['Altın', 'Gümüş'].includes(activeWallet.type)) {
+      if (txAsset !== 'Altın' && txAsset !== 'Gümüş') {
+        setTxAsset(activeWallet.type === 'Gümüş' ? 'Gümüş' : 'Altın');
+      }
+    } else {
+      setTxAsset('TRY');
+    }
+  }, [activeWallet]);
+
+  const amountUnitLabel = useMemo(() => {
+    if (!activeWallet) return '₺';
+    if (['Dolar', 'Euro'].includes(activeWallet.type)) {
+      return txAsset === 'EUR' ? '€' : '$';
+    }
+    if (['Altın', 'Gümüş'].includes(activeWallet.type)) {
+      return txAsset === 'Gümüş' ? 'gr Gümüş' : 'gr Altın';
+    }
+    if (activeWallet.type === 'Borsa_USD') return '$';
+    return '₺';
+  }, [activeWallet, txAsset]);
 
   return (
     <div>
@@ -783,7 +989,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
           <form onSubmit={handleSaveEditTransaction}>
             <div className="form-group">
               <label className="form-label">
-                Tutar {activeWallet ? `(${activeWallet.type === 'Altın' || activeWallet.type === 'Gümüş' ? 'Gram' : activeWallet.type === 'Dolar' || activeWallet.type === 'Borsa_USD' ? '$' : activeWallet.type === 'Euro' ? '€' : '₺'})` : ''}
+                Tutar {activeWallet ? `(${amountUnitLabel})` : ''}
               </label>
               <input
                 type="number"
@@ -806,11 +1012,35 @@ export const Transactions: React.FC<TransactionsProps> = ({
               >
                 {wallets.map((w) => (
                   <option key={w.id} value={w.id}>
-                    {w.name} [{w.type}] ({formatWalletBalance(Number(w.balance), w.type)})
+                    {w.name} [{w.type}] ({getWalletDisplayBalance(w)})
                   </option>
                 ))}
               </select>
             </div>
+
+            {activeWallet && ['Dolar', 'Euro', 'Altın', 'Gümüş'].includes(activeWallet.type) && (
+              <div className="form-group">
+                <label className="form-label">İşlem Yapılan Varlık</label>
+                <select
+                  className="form-control"
+                  value={txAsset}
+                  onChange={(e) => setTxAsset(e.target.value)}
+                  style={{ background: '#121826' }}
+                >
+                  {['Dolar', 'Euro'].includes(activeWallet.type) ? (
+                    <>
+                      <option value="USD">ABD Doları ($)</option>
+                      <option value="EUR">Euro (€)</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="Altın">Gram Altın (gr)</option>
+                      <option value="Gümüş">Gram Gümüş (gr)</option>
+                    </>
+                  )}
+                </select>
+              </div>
+            )}
 
             <div className="form-group">
               <label className="form-label">Kategori</label>
@@ -951,20 +1181,6 @@ export const Transactions: React.FC<TransactionsProps> = ({
             </div>
 
             <div className="form-group">
-              <label className="form-label">
-                Miktar {activeWallet ? `(${activeWallet.type === 'Altın' || activeWallet.type === 'Gümüş' ? 'Gram' : activeWallet.type === 'Dolar' || activeWallet.type === 'Borsa_USD' ? '$' : activeWallet.type === 'Euro' ? '€' : '₺'})` : ''}
-              </label>
-              <input
-                type="number"
-                step="any"
-                className="form-control"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="form-group">
               <label className="form-label">İlişkili Hesap</label>
               <select
                 className="form-control"
@@ -975,10 +1191,48 @@ export const Transactions: React.FC<TransactionsProps> = ({
               >
                 {wallets.map((w) => (
                   <option key={w.id} value={w.id}>
-                    {w.name} [{w.type}] ({formatWalletBalance(Number(w.balance), w.type)})
+                    {w.name} [{w.type}] ({getWalletDisplayBalance(w)})
                   </option>
                 ))}
               </select>
+            </div>
+
+            {activeWallet && ['Dolar', 'Euro', 'Altın', 'Gümüş'].includes(activeWallet.type) && (
+              <div className="form-group">
+                <label className="form-label">İşlem Yapılan Varlık</label>
+                <select
+                  className="form-control"
+                  value={txAsset}
+                  onChange={(e) => setTxAsset(e.target.value)}
+                  style={{ background: '#121826' }}
+                >
+                  {['Dolar', 'Euro'].includes(activeWallet.type) ? (
+                    <>
+                      <option value="USD">ABD Doları ($)</option>
+                      <option value="EUR">Euro (€)</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="Altın">Gram Altın (gr)</option>
+                      <option value="Gümüş">Gram Gümüş (gr)</option>
+                    </>
+                  )}
+                </select>
+              </div>
+            )}
+
+            <div className="form-group">
+              <label className="form-label">
+                Miktar {activeWallet ? `(${amountUnitLabel})` : ''}
+              </label>
+              <input
+                type="number"
+                step="any"
+                className="form-control"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+              />
             </div>
 
             <div className="form-group">
@@ -1098,21 +1352,6 @@ export const Transactions: React.FC<TransactionsProps> = ({
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">
-                    Miktar {activeWallet ? `(${activeWallet.type === 'Altın' || activeWallet.type === 'Gümüş' ? 'Gram' : activeWallet.type === 'Dolar' || activeWallet.type === 'Borsa_USD' ? '$' : activeWallet.type === 'Euro' ? '€' : '₺'})` : ''}
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    className="form-control"
-                    placeholder="0.00"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
                   <label className="form-label">İlişkili Hesap (Bakiye Güncellemesi İçin)</label>
                   <select
                     className="form-control"
@@ -1126,11 +1365,50 @@ export const Transactions: React.FC<TransactionsProps> = ({
                     ) : (
                       wallets.map((w) => (
                         <option key={w.id} value={w.id}>
-                          {w.name} [{w.type}] ({formatWalletBalance(Number(w.balance), w.type)})
+                          {w.name} [{w.type}] ({getWalletDisplayBalance(w)})
                         </option>
                       ))
                     )}
                   </select>
+                </div>
+
+                {activeWallet && ['Dolar', 'Euro', 'Altın', 'Gümüş'].includes(activeWallet.type) && (
+                  <div className="form-group">
+                    <label className="form-label">İşlem Yapılan Varlık</label>
+                    <select
+                      className="form-control"
+                      value={txAsset}
+                      onChange={(e) => setTxAsset(e.target.value)}
+                      style={{ background: '#121826' }}
+                    >
+                      {['Dolar', 'Euro'].includes(activeWallet.type) ? (
+                        <>
+                          <option value="USD">ABD Doları ($)</option>
+                          <option value="EUR">Euro (€)</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="Altın">Gram Altın (gr)</option>
+                          <option value="Gümüş">Gram Gümüş (gr)</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label className="form-label">
+                    Miktar {activeWallet ? `(${amountUnitLabel})` : ''}
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    className="form-control"
+                    placeholder="0.00"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    required
+                  />
                 </div>
 
                 <div className="form-group">
@@ -1174,7 +1452,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
               <>
                 <div className="form-group">
                   <label className="form-label">
-                    Tutar {activeWallet ? `(${activeWallet.type === 'Altın' || activeWallet.type === 'Gümüş' ? 'Gram' : activeWallet.type === 'Dolar' || activeWallet.type === 'Borsa_USD' ? '$' : activeWallet.type === 'Euro' ? '€' : '₺'})` : ''}
+                    Tutar {activeWallet ? `(${amountUnitLabel})` : ''}
                   </label>
                   <input
                     type="number"
@@ -1201,12 +1479,36 @@ export const Transactions: React.FC<TransactionsProps> = ({
                     ) : (
                       wallets.map((w) => (
                         <option key={w.id} value={w.id}>
-                          {w.name} [{w.type}] ({formatWalletBalance(Number(w.balance), w.type)})
+                          {w.name} [{w.type}] ({getWalletDisplayBalance(w)})
                         </option>
                       ))
                     )}
                   </select>
                 </div>
+
+                {activeWallet && ['Dolar', 'Euro', 'Altın', 'Gümüş'].includes(activeWallet.type) && (
+                  <div className="form-group">
+                    <label className="form-label">İşlem Yapılan Varlık</label>
+                    <select
+                      className="form-control"
+                      value={txAsset}
+                      onChange={(e) => setTxAsset(e.target.value)}
+                      style={{ background: '#121826' }}
+                    >
+                      {['Dolar', 'Euro'].includes(activeWallet.type) ? (
+                        <>
+                          <option value="USD">ABD Doları ($)</option>
+                          <option value="EUR">Euro (€)</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="Altın">Gram Altın (gr)</option>
+                          <option value="Gümüş">Gram Gümüş (gr)</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                )}
 
                 <div className="form-group">
                   <label className="form-label">Kategori Seçin</label>
@@ -1516,7 +1818,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
                         className={`tx-amount ${cat?.type === 'Gelir' ? 'gelir' : 'gider'}`}
                       >
                         {cat?.type === 'Gelir' ? '+' : '-'}
-                        {formatWalletBalance(Number(tx.amount), w?.type)}
+                        {formatTransactionOrDebtAmount(Number(tx.amount), w?.type, tx.description)}
                       </span>
                     </div>
                   </div>
@@ -1623,7 +1925,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
                     <div className="debt-header-right" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <span className={`debt-amount ${isReceivable ? 'receivable' : 'payable'}`} style={{ fontWeight: 700, fontSize: '0.9rem' }}>
                         {isReceivable ? '+' : '-'}
-                        {formatWalletBalance(Number(debt.amount), w?.type)}
+                        {formatTransactionOrDebtAmount(Number(debt.amount), w?.type, debt.name)}
                       </span>
                       <span className={`debt-badge ${debt.status === 'Ödendi' ? 'paid' : 'pending'}`}>
                         {debt.status === 'Ödendi' ? 'Ödendi' : 'Bekliyor'}

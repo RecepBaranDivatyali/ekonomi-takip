@@ -105,7 +105,7 @@ const CURRENCY_CONFIG: Array<{
 
 // Single fetch – returns ExchangeRates (for wallet calcs) + full CurrencyRate list (for DovizMaden tab)
 export async function fetchAllRatesData(): Promise<{ rates: ExchangeRates; currencyRates: CurrencyRate[] }> {
-  const response = await fetch('https://finans.truncgil.com/today.json');
+  const response = await fetch('https://finans.truncgil.com/today.json', { cache: 'no-store' });
   if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
   const data = await response.json();
 
@@ -146,7 +146,7 @@ export interface StockQuote {
 }
 
 export async function fetchLiveStockPrices(): Promise<{ [key: string]: StockQuote }> {
-  const response = await fetch('https://doviz-api.onrender.com/api/borsaAll');
+  const response = await fetch('https://doviz-api.onrender.com/api/borsaAll', { cache: 'no-store' });
   if (!response.ok) throw new Error(`Borsa API HTTP error! status: ${response.status}`);
   const result = await response.json();
   if (!result.success || !Array.isArray(result.data)) throw new Error('Invalid Borsa API response structure');
@@ -160,5 +160,121 @@ export async function fetchLiveStockPrices(): Promise<{ [key: string]: StockQuot
       };
     }
   });
+
+  // Alias indices for easier user recognition
+  if (prices['XU100']) {
+    prices['BIST100'] = prices['XU100'];
+  }
+  if (prices['XU030']) {
+    prices['BIST30'] = prices['XU030'];
+  }
+
   return prices;
 }
+
+export interface WalletAssetBalances {
+  usd: number;
+  eur: number;
+  gold: number;
+  silver: number;
+  totalTL: number;
+  displayValue: string;
+}
+
+export function calculateWalletAssetBalances(
+  wallet: { id: string; type: string; balance: number },
+  transactions: { wallet_id: string; amount: number; description: string }[],
+  rates: { USD: number; EUR: number; Altın: number; Gümüş: number }
+): WalletAssetBalances {
+  const wTxs = transactions.filter(tx => tx.wallet_id === wallet.id);
+  
+  let usd = 0;
+  let eur = 0;
+  let gold = 0;
+  let silver = 0;
+  
+  let hasUsdTx = false;
+  let hasEurTx = false;
+  let hasGoldTx = false;
+  let hasSilverTx = false;
+
+  wTxs.forEach(tx => {
+    const desc = (tx.description || '').toLowerCase();
+    const isSell = desc.includes('satış') || desc.includes('satis') || desc.includes('satisi') || desc.includes('çıkış') || desc.includes('cikis');
+    const multiplier = isSell ? -1 : 1;
+    const absAmount = Math.abs(tx.amount);
+    
+    if (desc.includes('alımı için çıkış') || desc.includes('alimi icin cikis')) {
+      return;
+    }
+
+    if (desc.includes('dolar') || desc.includes('usd') || desc.includes('$')) {
+      usd += absAmount * multiplier;
+      hasUsdTx = true;
+    } else if (desc.includes('euro') || desc.includes('eur') || desc.includes('€')) {
+      eur += absAmount * multiplier;
+      hasEurTx = true;
+    } else if (desc.includes('altın') || desc.includes('altin') || desc.includes('gold')) {
+      gold += absAmount * multiplier;
+      hasGoldTx = true;
+    } else if (desc.includes('gümüş') || desc.includes('gumus') || desc.includes('silver')) {
+      silver += absAmount * multiplier;
+      hasSilverTx = true;
+    } else {
+      if (wallet.type === 'Dolar') {
+        usd += absAmount * multiplier;
+        hasUsdTx = true;
+      } else if (wallet.type === 'Euro') {
+        eur += absAmount * multiplier;
+        hasEurTx = true;
+      } else if (wallet.type === 'Altın') {
+        gold += absAmount * multiplier;
+        hasGoldTx = true;
+      } else if (wallet.type === 'Gümüş') {
+        silver += absAmount * multiplier;
+        hasSilverTx = true;
+      }
+    }
+  });
+
+  if (wTxs.length === 0) {
+    if (wallet.type === 'Dolar') usd = wallet.balance;
+    else if (wallet.type === 'Euro') eur = wallet.balance;
+    else if (wallet.type === 'Altın') gold = wallet.balance;
+    else if (wallet.type === 'Gümüş') silver = wallet.balance;
+  }
+
+  let totalTL = 0;
+  if (['Dolar', 'Euro', 'Döviz'].includes(wallet.type)) {
+    totalTL = (usd * rates.USD) + (eur * rates.EUR);
+  } else if (['Altın', 'Gümüş', 'Maden'].includes(wallet.type)) {
+    totalTL = (gold * rates.Altın) + (silver * rates.Gümüş);
+  }
+
+  const displayParts: string[] = [];
+  if (['Dolar', 'Euro', 'Döviz'].includes(wallet.type)) {
+    if (eur > 0 || (!hasUsdTx && !hasEurTx && wallet.type === 'Euro')) {
+      displayParts.push(`${eur.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`);
+    }
+    if (usd > 0 || (!hasUsdTx && !hasEurTx && wallet.type === 'Dolar') || displayParts.length === 0) {
+      displayParts.push(`${usd.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $`);
+    }
+  } else if (['Altın', 'Gümüş', 'Maden'].includes(wallet.type)) {
+    if (gold > 0 || (!hasGoldTx && !hasSilverTx && wallet.type === 'Altın')) {
+      displayParts.push(`${gold.toFixed(4)} gr Altın`);
+    }
+    if (silver > 0 || (!hasGoldTx && !hasSilverTx && wallet.type === 'Gümüş') || displayParts.length === 0) {
+      displayParts.push(`${silver.toFixed(4)} gr Gümüş`);
+    }
+  }
+
+  return {
+    usd,
+    eur,
+    gold,
+    silver,
+    totalTL,
+    displayValue: displayParts.join(' + ')
+  };
+}
+

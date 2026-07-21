@@ -47,6 +47,12 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+
+  // Multi-asset starting balance states
+  const [usdBalance, setUsdBalance] = useState('');
+  const [eurBalance, setEurBalance] = useState('');
+  const [goldBalance, setGoldBalance] = useState('');
+  const [silverBalance, setSilverBalance] = useState('');
   const [editingWallet, setEditingWallet] = useState<Wallet | null>(null);
 
   const handleStartEditWallet = (w: Wallet) => {
@@ -71,18 +77,22 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
     setErrorMsg(null);
 
     try {
+      const updateData: any = {
+        name: name.trim(),
+        type,
+        balance: balance ? Number(balance) : 0,
+        color,
+        interest_rate: type === 'Vadeli' ? (Number(interestRate) || 0) : 0,
+        maturity_days: type === 'Vadeli' ? (Number(maturityDays) || 30) : 30,
+      };
+      if (type === 'Kredi_Karti') {
+        updateData.credit_limit = Number(creditLimit) || 0;
+        updateData.due_date = Number(dueDate) || 15;
+      }
+
       const { error } = await supabase
         .from('wallets')
-        .update({
-          name: name.trim(),
-          type,
-          balance: balance ? Number(balance) : 0,
-          color,
-          interest_rate: type === 'Vadeli' ? (Number(interestRate) || 0) : 0,
-          maturity_days: type === 'Vadeli' ? (Number(maturityDays) || 30) : 30,
-          credit_limit: type === 'Kredi_Karti' ? (Number(creditLimit) || 0) : null,
-          due_date: type === 'Kredi_Karti' ? (Number(dueDate) || 15) : null,
-        })
+        .update(updateData)
         .eq('id', editingWallet.id);
 
       if (error) throw error;
@@ -111,23 +121,103 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
     setErrorMsg(null);
 
     try {
-      const { error } = await supabase.from('wallets').insert({
+      const isMultiAsset = type === 'Dolar' || type === 'Altın';
+      const initialBalance = isMultiAsset ? 0 : (balance ? Number(balance) : 0);
+
+      // Insert the wallet
+      const insertData: any = {
         user_id: userId,
         name: name.trim(),
         type,
-        balance: balance ? Number(balance) : 0,
+        balance: initialBalance,
         color,
         interest_rate: type === 'Vadeli' ? (Number(interestRate) || 0) : 0,
         maturity_days: type === 'Vadeli' ? (Number(maturityDays) || 30) : 30,
-        last_interest_date: type === 'Vadeli' ? new Date().toISOString().split('T')[0] : null,
-        credit_limit: type === 'Kredi_Karti' ? (Number(creditLimit) || 0) : null,
-        due_date: type === 'Kredi_Karti' ? (Number(dueDate) || 15) : null,
-      });
+        last_interest_date: type === 'Vadeli' ? new Date().toLocaleDateString('sv-SE') : null,
+      };
+      if (type === 'Kredi_Karti') {
+        insertData.credit_limit = Number(creditLimit) || 0;
+        insertData.due_date = Number(dueDate) || 15;
+      }
+
+      const { data: newWalletData, error } = await supabase.from('wallets').insert(insertData).select().single();
 
       if (error) throw error;
 
+      // Handle transactions
+      if (newWalletData) {
+        const today = new Date().toLocaleDateString('sv-SE');
+        const timeNow = new Date().toTimeString().slice(0, 5);
+
+        if (type === 'Dolar') {
+          // Döviz Wallet starting balances
+          const usdVal = Number(usdBalance) || 0;
+          const eurVal = Number(eurBalance) || 0;
+
+          if (usdVal > 0) {
+            await supabase.from('transactions').insert({
+              user_id: userId,
+              wallet_id: newWalletData.id,
+              amount: usdVal,
+              description: `Başlangıç Bakiyesi - Dolar Alış (Kur: ${rates.USD.toFixed(4)})`,
+              date: today,
+              time_range: timeNow,
+            });
+          }
+          if (eurVal > 0) {
+            await supabase.from('transactions').insert({
+              user_id: userId,
+              wallet_id: newWalletData.id,
+              amount: eurVal,
+              description: `Başlangıç Bakiyesi - Euro Alış (Kur: ${rates.EUR.toFixed(4)})`,
+              date: today,
+              time_range: timeNow,
+            });
+          }
+        } else if (type === 'Altın') {
+          // Maden Wallet starting balances
+          const goldVal = Number(goldBalance) || 0;
+          const silverVal = Number(silverBalance) || 0;
+
+          if (goldVal > 0) {
+            await supabase.from('transactions').insert({
+              user_id: userId,
+              wallet_id: newWalletData.id,
+              amount: goldVal,
+              description: `Başlangıç Bakiyesi - Altın Alış (Kur: ${rates.Altın.toFixed(4)})`,
+              date: today,
+              time_range: timeNow,
+            });
+          }
+          if (silverVal > 0) {
+            await supabase.from('transactions').insert({
+              user_id: userId,
+              wallet_id: newWalletData.id,
+              amount: silverVal,
+              description: `Başlangıç Bakiyesi - Gümüş Alış (Kur: ${rates.Gümüş.toFixed(4)})`,
+              date: today,
+              time_range: timeNow,
+            });
+          }
+        } else if (initialBalance !== 0) {
+          // Vadesiz, Vadeli, Borsa_TRY, Borsa_USD, Kredi_Karti
+          await supabase.from('transactions').insert({
+            user_id: userId,
+            wallet_id: newWalletData.id,
+            amount: initialBalance,
+            description: 'Başlangıç Bakiyesi',
+            date: today,
+            time_range: timeNow,
+          });
+        }
+      }
+
       setName('');
       setBalance('');
+      setUsdBalance('');
+      setEurBalance('');
+      setGoldBalance('');
+      setSilverBalance('');
       setType('Vadesiz');
       setInterestRate('');
       setMaturityDays('32');
@@ -167,7 +257,7 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
     return ` (${new Intl.NumberFormat('tr-TR', {
       style: 'currency',
       currency: 'TRY',
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(tryVal)})`;
   };
@@ -177,7 +267,7 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(val);
     }
@@ -185,7 +275,7 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
       return new Intl.NumberFormat('de-DE', {
         style: 'currency',
         currency: 'EUR',
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(val);
     }
@@ -199,7 +289,7 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
       return new Intl.NumberFormat('tr-TR', {
         style: 'currency',
         currency: 'TRY',
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(val) + ' (Borsa)';
     }
@@ -207,14 +297,14 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(val) + ' (Borsa)';
     }
     return new Intl.NumberFormat('tr-TR', {
       style: 'currency',
       currency: 'TRY',
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(val);
   };
@@ -459,10 +549,8 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
               >
                 <option value="Vadesiz">Vadesiz Hesap / Nakit (TL - ₺)</option>
                 <option value="Vadeli">Vadeli Hesap / Vadeli Mevduat (TL - ₺)</option>
-                <option value="Dolar">USD Hesabı (Dolar - $)</option>
-                <option value="Euro">EUR Hesabı (Euro - €)</option>
-                <option value="Altın">Altın Hesabı (Gram - gr)</option>
-                <option value="Gümüş">Gümüş Hesabı (Gram - gr)</option>
+                <option value="Dolar">Döviz Hesabı (Dolar & Euro - $, €)</option>
+                <option value="Altın">Maden Hesabı (Altın & Gümüş - gr)</option>
                 <option value="Borsa_TRY">Borsa Hesabı (TL - ₺)</option>
                 <option value="Borsa_USD">Borsa Hesabı (Dolar - $)</option>
                 <option value="Kredi_Karti">Kredi Kartı (TL - ₺)</option>
@@ -594,10 +682,8 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
               >
                 <option value="Vadesiz">Vadesiz Hesap / Nakit (TL - ₺)</option>
                 <option value="Vadeli">Vadeli Hesap / Vadeli Mevduat (TL - ₺)</option>
-                <option value="Dolar">USD Hesabı (Dolar - $)</option>
-                <option value="Euro">EUR Hesabı (Euro - €)</option>
-                <option value="Altın">Altın Hesabı (Gram - gr)</option>
-                <option value="Gümüş">Gümüş Hesabı (Gram - gr)</option>
+                <option value="Dolar">Döviz Hesabı (Dolar & Euro - $, €)</option>
+                <option value="Altın">Maden Hesabı (Altın & Gümüş - gr)</option>
                 <option value="Borsa_TRY">Borsa Hesabı (TL - ₺)</option>
                 <option value="Borsa_USD">Borsa Hesabı (Dolar - $)</option>
                 <option value="Kredi_Karti">Kredi Kartı (TL - ₺)</option>
@@ -662,19 +748,75 @@ export const Wallets: React.FC<WalletsProps> = ({ wallets, onRefreshData, userId
               </div>
             )}
 
-            <div className="form-group">
-              <label className="form-label">
-                Başlangıç Bakiyesi {type === 'Kredi_Karti' ? '(Mevcut borç için eksi değer girin, örn: -2500)' : ((type === 'Altın' || type === 'Gümüş') ? '(Gram Cinsinden)' : `(${type === 'Dolar' || type === 'Borsa_USD' ? '$' : type === 'Euro' ? '€' : '₺'})`)}
-              </label>
-              <input
-                type="number"
-                step="any"
-                className="form-control"
-                placeholder="0"
-                value={balance}
-                onChange={(e) => setBalance(e.target.value)}
-              />
-            </div>
+            {type === 'Dolar' && (
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '14px' }}>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Başlangıç Bakiyesi (USD - $)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    className="form-control"
+                    placeholder="0"
+                    value={usdBalance}
+                    onChange={(e) => setUsdBalance(e.target.value)}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Başlangıç Bakiyesi (EUR - €)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    className="form-control"
+                    placeholder="0"
+                    value={eurBalance}
+                    onChange={(e) => setEurBalance(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {type === 'Altın' && (
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '14px' }}>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Başlangıç Bakiyesi (Altın - gr)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    className="form-control"
+                    placeholder="0"
+                    value={goldBalance}
+                    onChange={(e) => setGoldBalance(e.target.value)}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Başlangıç Bakiyesi (Gümüş - gr)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    className="form-control"
+                    placeholder="0"
+                    value={silverBalance}
+                    onChange={(e) => setSilverBalance(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {type !== 'Dolar' && type !== 'Altın' && (
+              <div className="form-group">
+                <label className="form-label">
+                  Başlangıç Bakiyesi {type === 'Kredi_Karti' ? '(Mevcut borç için eksi değer girin, örn: -2500)' : `(${type === 'Borsa_USD' ? '$' : '₺'})`}
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  className="form-control"
+                  placeholder="0"
+                  value={balance}
+                  onChange={(e) => setBalance(e.target.value)}
+                />
+              </div>
+            )}
 
             <div className="form-group">
               <label className="form-label">Cüzdan Rengi</label>

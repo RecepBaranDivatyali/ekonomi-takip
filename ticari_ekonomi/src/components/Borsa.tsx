@@ -183,6 +183,7 @@ interface BorsaProps {
 }
 
 const TRY_STOCKS = [
+  'BIST100', 'BIST30', 'XU100', 'XU030',
   'AEFES', 'AGHOL', 'AKBNK', 'AKSA', 'AKSEN', 'ALARK', 'ALTNY', 'ANHYT', 'ANSGR', 'ARCLK', 
   'ASELS', 'ASTOR', 'BERA', 'BIMAS', 'BRSAN', 'BRYAT', 'BSOKE', 'BTCIM', 'CANTE', 'CCOLA', 
   'CIMSA', 'CLEBI', 'CVKMD', 'CWENE', 'DAPGM', 'DOAS', 'DOHOL', 'DSTKF', 'ECILC', 'EFOR', 
@@ -255,6 +256,7 @@ export const Borsa: React.FC<BorsaProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [activeBorsaTab, setActiveBorsaTab] = useState<'portfoy' | 'market'>('portfoy');
 
   // Sync default symbol when active market changes
   React.useEffect(() => {
@@ -337,23 +339,56 @@ export const Borsa: React.FC<BorsaProps> = ({
     };
   }, [userStocks, wallets, stockPrices, activeMarket]);
 
-  // Unique symbols owned by user to display in watchlist, falling back to popular ones if portfolio is empty
+  // List of popular BIST or Global symbols to form a balanced 3xN grid,
+  // prioritizing owned symbols first and padding with popular ones.
   const watchlistSymbols = useMemo(() => {
+    // Get unique owned symbols for the active market
     const marketStocks = userStocks.filter(stock => {
       const w = wallets.find(w => w.id === stock.wallet_id);
       if (!w) return false;
       return activeMarket === 'USD' ? w.type === 'Borsa_USD' : w.type !== 'Borsa_USD';
     });
 
-    if (marketStocks.length > 0) {
-      return Array.from(
-        new Set(marketStocks.map(s => s.symbol === 'THY' ? 'THYAO' : s.symbol.toUpperCase()))
-      );
-    }
+    const ownedSymbols = Array.from(
+      new Set(marketStocks.map(s => s.symbol === 'THY' ? 'THYAO' : s.symbol.toUpperCase()))
+    );
+
+    // Curated list of popular fallback symbols to pad the grid (indices, funds, stocks)
+    const popularTry = [
+      'BIST100', 'BIST30', 'XU100', 'XU030', // general indices
+      'TTE', 'AFT', 'MAC', 'YAS', 'IPJ', 'GMR', 'IIH', 'PNU', 'PRY', 'TP2', // popular funds
+      'THYAO', 'BIMAS', 'EREGL', 'AKBNK', 'KCHOL', 'TUPRS', 
+      'SAHOL', 'ASELS', 'YKBNK', 'ISCTR', 'SASA', 'SISE',
+      'TAVHL', 'FROTO', 'DOAS', 'MGROS', 'PGSUS', 'TCELL',
+      'GARAN', 'HALKB', 'VAKBN', 'HEKTS', 'KOZAL', 'PETKM'
+    ];
     
-    return activeMarket === 'TRY' 
-      ? ['THYAO', 'BIMAS', 'EREGL', 'AKBNK', 'KCHOL', 'TUPRS']
-      : ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'SPY', 'QQQ'];
+    const popularUsd = [
+      'AAPL', 'TSLA', 'NVDA', 'MSFT', 'AMZN', 'GOOGL',
+      'META', 'NFLX', 'SPY', 'QQQ', 'VOO', 'GLD',
+      'AMD', 'INTC', 'DIS', 'PYPL', 'ADBE', 'CSCO',
+      'PEP', 'KO', 'NKE', 'XOM', 'CVX', 'PG', 'WMT'
+    ];
+
+    const curatedPopular = activeMarket === 'TRY' ? popularTry : popularUsd;
+
+    // Combine owned symbols first, then add popular ones
+    const combined = [...ownedSymbols];
+    for (const sym of curatedPopular) {
+      if (!combined.includes(sym)) {
+        combined.push(sym);
+      }
+    }
+
+    // Target count: at least 36 for TRY (to show a rich set of stocks/funds) or 24 for USD,
+    // and must be a multiple of 3 that can cover all owned symbols.
+    const ownedCount = ownedSymbols.length;
+    const minRequired = Math.ceil(ownedCount / 3) * 3;
+    const minTarget = activeMarket === 'TRY' ? 36 : 24;
+    const targetLength = Math.max(minTarget, minRequired);
+
+    // Slice to targetLength (since combined is guaranteed to have enough items due to the large curatedPopular lists)
+    return combined.slice(0, targetLength);
   }, [userStocks, wallets, activeMarket]);
 
   // Selected wallet summary
@@ -444,7 +479,7 @@ export const Borsa: React.FC<BorsaProps> = ({
           wallet_id: wallet.id,
           amount: totalCost,
           description: `${symbol} Hisse Alımı (${count} Adet @ ${tradePrice} ${isUSD ? '$' : '₺'})`,
-          date: new Date().toISOString().split('T')[0],
+          date: new Date().toLocaleDateString('sv-SE'),
           time_range: new Date().toTimeString().slice(0, 5),
         });
 
@@ -494,7 +529,7 @@ export const Borsa: React.FC<BorsaProps> = ({
           wallet_id: wallet.id,
           amount: totalCost,
           description: `${symbol} Hisse Satışı (${count} Adet @ ${tradePrice} ${isUSD ? '$' : '₺'})`,
-          date: new Date().toISOString().split('T')[0],
+          date: new Date().toLocaleDateString('sv-SE'),
           time_range: new Date().toTimeString().slice(0, 5),
         });
       }
@@ -768,32 +803,31 @@ export const Borsa: React.FC<BorsaProps> = ({
           padding: '16px',
           borderRadius: '16px',
           marginBottom: '24px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          rowGap: '16px',
+          columnGap: '12px',
         }}
       >
+        {/* Top Left: Hisse Portföy Değeri */}
         <div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
             Hisse Portföy Değeri
           </div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-bright)', marginTop: '4px' }}>
+          <div style={{ fontSize: '1.5rem', fontWeight: 850, color: 'var(--text-bright)', marginTop: '4px' }}>
             {formatCurrency(portfolio.totalStockVal)}
           </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px', fontWeight: 600 }}>
-            Toplam Yatırılan: {formatCurrency(portfolio.totalInvested)}
-            <span style={{ margin: '0 6px' }}>•</span>
-            Harcayabilir: <span style={{ color: 'var(--text-bright)' }}>{formatCurrency(portfolio.totalCash)}</span>
-          </div>
         </div>
+
+        {/* Top Right: Toplam Kar / Zarar */}
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
             Toplam Kar / Zarar
           </div>
           <div
             style={{
-              fontSize: '1.1rem',
-              fontWeight: 800,
+              fontSize: '1.3rem',
+              fontWeight: 850,
               color: portfolio.totalProfitLoss >= 0 ? '#10b981' : '#ef4444',
               display: 'flex',
               alignItems: 'center',
@@ -810,7 +844,7 @@ export const Borsa: React.FC<BorsaProps> = ({
           </div>
           <div
             style={{
-              fontSize: '0.75rem',
+              fontSize: '0.72rem',
               fontWeight: 700,
               color: portfolio.totalProfitLoss >= 0 ? '#10b981' : '#ef4444',
               marginTop: '2px',
@@ -820,147 +854,214 @@ export const Borsa: React.FC<BorsaProps> = ({
             {portfolio.totalProfitLossPercent.toFixed(2)}%
           </div>
         </div>
+
+        {/* Bottom Left: Harcayabilir Nakit */}
+        <div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
+            Harcayabilir Nakit
+          </div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-bright)', marginTop: '4px' }}>
+            {formatCurrency(portfolio.totalCash)}
+          </div>
+        </div>
+
+        {/* Bottom Right: Toplam Yatırılan */}
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
+            Toplam Yatırılan
+          </div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-muted)', marginTop: '4px' }}>
+            {formatCurrency(portfolio.totalInvested)}
+          </div>
+        </div>
       </div>
 
-      {/* Owned Stocks Grid */}
-      <h3 style={{ fontSize: '0.95rem', marginBottom: '12px', paddingLeft: '4px', color: 'var(--text-bright)' }}>
-        Portföy Hisselerim
-      </h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px', marginBottom: '24px' }}>
-        {portfolio.items.length > 0 ? (
-          portfolio.items.map((item) => (
-            <div
-              key={item.id}
-              className="tx-item"
-              style={{
-                cursor: 'default',
-                background: 'rgba(255, 255, 255, 0.01)',
-                borderColor: 'rgba(255, 255, 255, 0.03)',
-                padding: '8px 10px',
-              }}
-            >
-              <div className="tx-left" style={{ gap: '8px' }}>
-                <StockLogo symbol={item.symbol} profitLoss={item.profitLoss} />
-                <div className="tx-details">
-                  <span className="tx-description" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
-                    <span style={{ color: 'var(--text-bright)', marginRight: '6px' }}>{item.symbol}</span>
-                    <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{item.shares_count} Adet</span>
-                  </span>
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '2px', fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                    <span>Maliyet: {formatCurrency(Number(item.average_cost), item.walletType, item.symbol)}</span>
-                    <span>•</span>
-                    <span>Güncel: {formatCurrency(item.currentPrice, item.walletType, item.symbol)}</span>
+      {/* Borsa Tab Switch */}
+      <div className="tab-switch" style={{ marginBottom: '16px' }}>
+        <button
+          type="button"
+          className={`tab-switch-btn ${activeBorsaTab === 'portfoy' ? 'active' : ''}`}
+          onClick={() => setActiveBorsaTab('portfoy')}
+          style={{ fontSize: '0.8rem', padding: '8px 12px' }}
+        >
+          💼 Portföyüm
+        </button>
+        <button
+          type="button"
+          className={`tab-switch-btn ${activeBorsaTab === 'market' ? 'active' : ''}`}
+          onClick={() => setActiveBorsaTab('market')}
+          style={{ fontSize: '0.8rem', padding: '8px 12px' }}
+        >
+          {activeMarket === 'TRY' ? '📈 BIST' : '📈 Global'}
+        </button>
+      </div>
+
+      {activeBorsaTab === 'market' ? (
+        <>
+          {/* Live Market Watchlist (BIST Watchlist) */}
+          <h3 style={{ fontSize: '0.95rem', marginBottom: '12px', paddingLeft: '4px', color: 'var(--text-bright)' }}>
+            {activeMarket === 'TRY' ? 'Canlı BIST Fiyatları (Hisse & Fon)' : 'Canlı Global Fiyatlar (Hisse & ETF)'}
+          </h3>
+          <div 
+            style={{ 
+              background: 'rgba(255, 255, 255, 0.015)',
+              borderColor: 'rgba(255, 255, 255, 0.04)',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderRadius: '12px',
+              padding: '10px 12px',
+              marginBottom: '14px',
+              fontSize: '0.75rem',
+              color: 'var(--text-muted)',
+              lineHeight: '1.4',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <span>💡</span>
+            <span>Yatırım yapmak istediğiniz hisseye tıklayarak hızlıca Alım/Satım işlemi gerçekleştirebilirsiniz.</span>
+          </div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '10px',
+              marginBottom: '24px',
+            }}
+          >
+            {watchlistSymbols.map((symbol) => {
+              const quote = stockPrices[symbol];
+              const price = quote ? quote.price : 0;
+              const change = quote ? quote.change : 0;
+              const isUp = change >= 0;
+
+              const isOwned = portfolio.items.some(item => {
+                const itemSym = item.symbol === 'THY' ? 'THYAO' : item.symbol.toUpperCase();
+                return itemSym === symbol;
+              });
+
+              return (
+                <div
+                  key={symbol}
+                  onClick={() => {
+                    setSymbol(symbol);
+                    if (!showForm) setShowForm(true);
+                  }}
+                  style={{
+                    background: isOwned ? 'rgba(59, 130, 246, 0.04)' : 'rgba(255, 255, 255, 0.02)',
+                    border: isOwned ? '1px solid rgba(59, 130, 246, 0.2)' : '1px solid rgba(255,255,255,0.04)',
+                    borderRadius: '12px',
+                    padding: '10px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.4)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = isOwned ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.04)')}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-bright)' }}>{symbol}</span>
+                    {isOwned && (
+                      <span style={{ fontSize: '0.55rem', color: '#60a5fa', background: 'rgba(59, 130, 246, 0.15)', padding: '1px 4px', borderRadius: '4px', fontWeight: 700 }}>
+                        PORTFÖY
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, margin: '4px 0' }}>
+                    {price > 0 ? formatCurrency(price, activeMarket === 'TRY' ? 'Borsa_TRY' : 'Borsa_USD', symbol) : 'Yükleniyor...'}
+                  </div>
+                  {price > 0 ? (
+                    <span
+                      style={{
+                        fontSize: '0.62rem',
+                        fontWeight: 700,
+                        color: isUp ? '#10b981' : '#ef4444',
+                        backgroundColor: isUp ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      {isUp ? '▲' : '▼'} {isUp ? '+' : ''}
+                      {change.toFixed(2)}%
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>-</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Owned Stocks Grid */}
+          <h3 style={{ fontSize: '0.95rem', marginBottom: '12px', paddingLeft: '4px', color: 'var(--text-bright)' }}>
+            Portföy Hisselerim
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px', marginBottom: '24px' }}>
+            {portfolio.items.length > 0 ? (
+              portfolio.items.map((item) => (
+                <div
+                  key={item.id}
+                  className="tx-item"
+                  onClick={() => {
+                    setSymbol(item.symbol);
+                    if (!showForm) setShowForm(true);
+                  }}
+                  style={{
+                    cursor: 'pointer',
+                    background: 'rgba(255, 255, 255, 0.01)',
+                    borderColor: 'rgba(255, 255, 255, 0.03)',
+                    padding: '8px 10px',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.25)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.03)')}
+                >
+                  <div className="tx-left" style={{ gap: '8px' }}>
+                    <StockLogo symbol={item.symbol} profitLoss={item.profitLoss} />
+                    <div className="tx-details">
+                      <span className="tx-description" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
+                        <span style={{ color: 'var(--text-bright)', marginRight: '6px' }}>{item.symbol}</span>
+                        <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{item.shares_count} Adet</span>
+                      </span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 6px', alignItems: 'center', marginTop: '2px', fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                        <span>Maliyet: {formatCurrency(Number(item.average_cost), item.walletType, item.symbol)}</span>
+                        <span>•</span>
+                        <span>Güncel: {formatCurrency(item.currentPrice, item.walletType, item.symbol)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="tx-right" style={{ alignItems: 'flex-end' }}>
+                    <span className="tx-amount" style={{ fontSize: '0.78rem', color: 'var(--text-bright)' }}>
+                      {formatCurrency(item.currentValue, item.walletType, item.symbol)}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        color: item.profitLoss >= 0 ? '#10b981' : '#ef4444',
+                        marginTop: '1px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '2px',
+                      }}
+                    >
+                      {item.profitLoss >= 0 ? '+' : ''}
+                      {item.profitLossPercent.toFixed(2)}%
+                    </span>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div style={{ textAlign: 'center', padding: '24px 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                Sahip olduğunuz bir hisse veya fon bulunmuyor.
               </div>
-              <div className="tx-right" style={{ alignItems: 'flex-end' }}>
-                <span className="tx-amount" style={{ fontSize: '0.78rem', color: 'var(--text-bright)' }}>
-                  {formatCurrency(item.currentValue, item.walletType, item.symbol)}
-                </span>
-                <span
-                  style={{
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    color: item.profitLoss >= 0 ? '#10b981' : '#ef4444',
-                    marginTop: '1px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '2px',
-                  }}
-                >
-                  {item.profitLoss >= 0 ? '+' : ''}
-                  {item.profitLossPercent.toFixed(2)}%
-                </span>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div style={{ textAlign: 'center', padding: '24px 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            Sahip olduğunuz bir hisse veya fon bulunmuyor.
+            )}
           </div>
-        )}
-      </div>
-
-      {/* Live Market Watchlist (BIST Watchlist) */}
-      <h3 style={{ fontSize: '0.95rem', marginBottom: '12px', paddingLeft: '4px', color: 'var(--text-bright)' }}>
-        {activeMarket === 'TRY' ? 'Canlı BIST Fiyatları (Hisse & Fon)' : 'Canlı Global Fiyatlar (Hisse & ETF)'}
-      </h3>
-      {portfolio.items.length === 0 && (
-        <div 
-          style={{ 
-            background: 'rgba(59, 130, 246, 0.06)',
-            borderColor: 'rgba(59, 130, 246, 0.15)',
-            borderWidth: '1px',
-            borderStyle: 'solid',
-            borderRadius: '12px',
-            padding: '12px',
-            marginBottom: '14px',
-            fontSize: '0.78rem',
-            color: '#93c5fd',
-            lineHeight: '1.4'
-          }}
-        >
-          💡 <strong>Bilgi:</strong> Portföyünüz henüz boş olduğu için popüler {activeMarket === 'TRY' ? 'BIST hisse ve fonları' : 'global hisse ve ETF\'ler'} listelenmektedir. Yatırım yaptıkça burada sadece kendi enstrümanlarınız listelenecektir.
-        </div>
+        </>
       )}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '10px',
-          marginBottom: '24px',
-        }}
-      >
-        {watchlistSymbols.map((symbol) => {
-          const quote = stockPrices[symbol];
-          const price = quote ? quote.price : 0;
-          const change = quote ? quote.change : 0;
-          const isUp = change >= 0;
-
-          return (
-            <div
-              key={symbol}
-              onClick={() => {
-                setSymbol(symbol);
-                if (!showForm) setShowForm(true);
-              }}
-              style={{
-                background: 'rgba(255, 255, 255, 0.02)',
-                border: '1px solid rgba(255,255,255,0.04)',
-                borderRadius: '12px',
-                padding: '10px',
-                textAlign: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)')}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')}
-            >
-              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-bright)' }}>{symbol}</div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 700, margin: '4px 0' }}>
-                {price > 0 ? formatCurrency(price, activeMarket === 'TRY' ? 'Borsa_TRY' : 'Borsa_USD', symbol) : 'Yükleniyor...'}
-              </div>
-              {price > 0 ? (
-                <span
-                  style={{
-                    fontSize: '0.62rem',
-                    fontWeight: 700,
-                    color: isUp ? '#10b981' : '#ef4444',
-                    backgroundColor: isUp ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                  }}
-                >
-                  {isUp ? '▲' : '▼'} {isUp ? '+' : ''}
-                  {change.toFixed(2)}%
-                </span>
-              ) : (
-                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>-</span>
-              )}
-            </div>
-          );
-        })}
-      </div>
 
       {/* Borsa Transaction History */}
       <div

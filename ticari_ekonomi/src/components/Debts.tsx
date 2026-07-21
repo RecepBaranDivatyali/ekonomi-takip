@@ -137,7 +137,7 @@ export const Debts: React.FC<DebtsProps> = ({
         category_id: debt.category_id || null,
         amount: numAmount,
         description: `${debt.name} - Borç Kapanışı (${debt.type})`,
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toLocaleDateString('sv-SE'),
       });
 
       if (txError) throw txError;
@@ -176,7 +176,7 @@ export const Debts: React.FC<DebtsProps> = ({
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(val);
     }
@@ -184,7 +184,7 @@ export const Debts: React.FC<DebtsProps> = ({
       return new Intl.NumberFormat('de-DE', {
         style: 'currency',
         currency: 'EUR',
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(val);
     }
@@ -198,7 +198,7 @@ export const Debts: React.FC<DebtsProps> = ({
       return new Intl.NumberFormat('tr-TR', {
         style: 'currency',
         currency: 'TRY',
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(val) + ' (Borsa)';
     }
@@ -206,14 +206,14 @@ export const Debts: React.FC<DebtsProps> = ({
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(val) + ' (Borsa)';
     }
     return new Intl.NumberFormat('tr-TR', {
       style: 'currency',
       currency: 'TRY',
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(val);
   };

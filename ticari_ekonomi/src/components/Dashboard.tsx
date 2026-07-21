@@ -112,7 +112,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(val);
     }
@@ -120,7 +120,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       return new Intl.NumberFormat('de-DE', {
         style: 'currency',
         currency: 'EUR',
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(val);
     }
@@ -133,7 +133,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return new Intl.NumberFormat('tr-TR', {
       style: 'currency',
       currency: 'TRY',
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(val);
   }, []);
@@ -245,7 +245,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       }
     });
 
-    return Object.values(expenseByCat);
+    return Object.values(expenseByCat).sort((a, b) => b.value - a.value);
   }, [filteredTransactions, categoryMap, walletMap, selectedWalletId, rates]);
 
   // Resolve category helper (handles null/automatic categories for Borsa & Döviz)
@@ -297,19 +297,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       .slice(0, 3);
   }, [filteredTransactions]);
 
-  const getWalletIcon = (walletType: 'Vadesiz' | 'Vadeli' | 'Dolar' | 'Euro' | 'Altın' | 'Gümüş' | 'Borsa_TRY' | 'Borsa_USD' | 'Kredi_Karti') => {
-    switch (walletType) {
-      case 'Dolar': return '$';
-      case 'Euro': return '€';
-      case 'Altın': return '🪙';
-      case 'Gümüş': return '🥈';
-      case 'Vadeli': return '🏦';
-      case 'Borsa_TRY':
-      case 'Borsa_USD': return '📈';
-      case 'Kredi_Karti': return '💳';
-      default: return '💵';
-    }
-  };
+
 
   return (
     <div>
@@ -412,16 +400,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="wallet-dot" style={{ backgroundColor: '#a8a29e' }} />
           <span>Tüm Hesaplar</span>
         </div>
-        {wallets.map((w) => (
-          <div
-            key={w.id}
-            className={`wallet-pill ${selectedWalletId === w.id ? 'active' : ''}`}
-            onClick={() => setSelectedWalletId(w.id)}
-          >
-            <div className="wallet-dot" style={{ backgroundColor: w.color }} />
-            <span>{w.name} ({getWalletIcon(w.type)})</span>
-          </div>
-        ))}
+        {wallets.map((w) => {
+          return (
+            <div
+              key={w.id}
+              className={`wallet-pill ${selectedWalletId === w.id ? 'active' : ''}`}
+              onClick={() => setSelectedWalletId(w.id)}
+            >
+              <div className="wallet-dot" style={{ backgroundColor: w.color }} />
+              <span>{w.name}</span>
+            </div>
+          );
+        })}
       </div>
 
       {/* Main Balance Header */}
@@ -429,16 +419,64 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="total-balance-title">
           {selectedWalletId === 'all' ? 'Toplam Varlık' : `${activeWallet?.name} Bakiyesi`}
         </div>
-        <div className="total-balance-amount">{displayBalanceStr}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+          <div 
+            className="total-balance-amount" 
+            style={{ 
+              marginBottom: activeWallet && ['Dolar', 'Euro', 'Altın', 'Gümüş', 'Borsa_USD'].includes(activeWallet.type) ? '0px' : '8px' 
+            }}
+          >
+            {displayBalanceStr}
+          </div>
+          {activeWallet && ['Dolar', 'Euro', 'Altın', 'Gümüş', 'Borsa_USD'].includes(activeWallet.type) && (
+            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '-2px', marginBottom: '8px' }}>
+              ({formatCurrency(
+                Number(activeWallet.balance) * (
+                  activeWallet.type === 'Dolar' || activeWallet.type === 'Borsa_USD' ? rates.USD :
+                  activeWallet.type === 'Euro' ? rates.EUR :
+                  activeWallet.type === 'Altın' ? rates.Altın :
+                  rates.Gümüş
+                ),
+                'Vadesiz'
+              )})
+            </div>
+          )}
+        </div>
 
         <div className="balance-flow-row">
-          <div className="flow-pill income" title="Bekleyen Alınacaklar (Eklenecek)">
+          <div className="flow-pill income" title="Bekleyen Alınacaklar (Eklenecek)" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
             <FiTrendingUp />
             <span>{formatCurrency(pendingIncomeTotal, activeWallet?.type)}</span>
+            {activeWallet && ['Dolar', 'Euro', 'Altın', 'Gümüş', 'Borsa_USD'].includes(activeWallet.type) && pendingIncomeTotal > 0 && (
+              <span style={{ fontSize: '0.62rem', opacity: 0.6, fontWeight: 600 }}>
+                ({formatCurrency(
+                  pendingIncomeTotal * (
+                    activeWallet.type === 'Dolar' || activeWallet.type === 'Borsa_USD' ? rates.USD :
+                    activeWallet.type === 'Euro' ? rates.EUR :
+                    activeWallet.type === 'Altın' ? rates.Altın :
+                    rates.Gümüş
+                  ),
+                  'Vadesiz'
+                )})
+              </span>
+            )}
           </div>
-          <div className="flow-pill expense" title="Bekleyen Verilecekler (Ödenecek / Gidecek)">
+          <div className="flow-pill expense" title="Bekleyen Verilecekler (Ödenecek / Gidecek)" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
             <FiTrendingDown />
             <span>{formatCurrency(pendingExpenseTotal, activeWallet?.type)}</span>
+            {activeWallet && ['Dolar', 'Euro', 'Altın', 'Gümüş', 'Borsa_USD'].includes(activeWallet.type) && pendingExpenseTotal > 0 && (
+              <span style={{ fontSize: '0.62rem', opacity: 0.6, fontWeight: 600 }}>
+                ({formatCurrency(
+                  pendingExpenseTotal * (
+                    activeWallet.type === 'Dolar' || activeWallet.type === 'Borsa_USD' ? rates.USD :
+                    activeWallet.type === 'Euro' ? rates.EUR :
+                    activeWallet.type === 'Altın' ? rates.Altın :
+                    rates.Gümüş
+                  ),
+                  'Vadesiz'
+                )})
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -460,6 +498,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   outerRadius={75}
                   paddingAngle={3}
                   dataKey="value"
+                  startAngle={90}
+                  endAngle={-270}
                 >
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
@@ -578,13 +618,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                   </div>
                 </div>
-                <div className="tx-right">
+                <div className="tx-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
                   <span
                     className={`tx-amount ${cat?.type === 'Gelir' ? 'gelir' : 'gider'}`}
                   >
                     {cat?.type === 'Gelir' ? '+' : '-'}
                     {formatCurrency(Number(tx.amount), txWallet?.type)}
                   </span>
+                  {txWallet && ['Dolar', 'Euro', 'Altın', 'Gümüş', 'Borsa_USD'].includes(txWallet.type) && (
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500, marginTop: '2px' }}>
+                      ({formatCurrency(
+                        Math.abs(Number(tx.amount)) * (
+                          txWallet.type === 'Dolar' || txWallet.type === 'Borsa_USD' ? rates.USD :
+                          txWallet.type === 'Euro' ? rates.EUR :
+                          txWallet.type === 'Altın' ? rates.Altın :
+                          rates.Gümüş
+                        ),
+                        'Vadesiz'
+                      )})
+                    </span>
+                  )}
                 </div>
               </div>
             );

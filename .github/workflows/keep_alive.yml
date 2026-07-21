@@ -1,0 +1,16 @@
+name: Keep Streamlit App Awake
+
+on:
+  schedule:
+    # Runs every day at 09:00 UTC to keep the Streamlit app active
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Allows manual execution from the GitHub Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Streamlit App
+        run: |
+          curl -I -s https://ekonomi-takip-7g2avskdgcvvkgyfvsnkpr.streamlit.app/
+          echo "Streamlit app pinged successfully to prevent auto-sleeping."
