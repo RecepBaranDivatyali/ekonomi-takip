@@ -764,9 +764,17 @@ def run_simulation(until_date=None):
 def get_monthly_flow():
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        current_month = datetime.now().strftime('%Y-%m')
+        now = datetime.now()
+        current_year = now.year
+        current_month_val = now.month
+        start_date = f"{current_year:04d}-{current_month_val:02d}-01"
+        if current_month_val == 12:
+            end_date = f"{current_year+1:04d}-01-01"
+        else:
+            end_date = f"{current_year:04d}-{current_month_val+1:02d}-01"
+            
         data = client._get("transactions", params={
-            "date": f"like.{current_month}%",
+            "date": [f"gte.{start_date}", f"lt.{end_date}"],
             "select": "amount,categories(type)"
         })
         stats = {'Gelir': 0.0, 'Gider': 0.0}
