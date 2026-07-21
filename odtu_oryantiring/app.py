@@ -58,9 +58,9 @@ def init_db():
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
         try:
-            logs = client._get("interest_rate_logs", params={"select": "id"})
+            logs = client._get("ory_interest_rate_logs", params={"select": "id"})
             if not logs:
-                client._insert("interest_rate_logs", {"date": "2026-01-01", "rate": 0.41})
+                client._insert("ory_interest_rate_logs", {"date": "2026-01-01", "rate": 0.41})
         except Exception:
             # Let the user run the SQL schema in their Supabase console first
             pass
@@ -142,7 +142,7 @@ def init_db():
 def add_category(name, emoji, color, type_val):
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        client._insert("categories", {"name": name, "emoji": emoji, "color": color, "type": type_val})
+        client._insert("ory_categories", {"name": name, "emoji": emoji, "color": color, "type": type_val})
     else:
         conn = get_connection()
         cursor = conn.cursor()
@@ -156,7 +156,7 @@ def add_category(name, emoji, color, type_val):
 def delete_category(category_id):
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        client._delete("categories", category_id)
+        client._delete("ory_categories", category_id)
     else:
         conn = get_connection()
         cursor = conn.cursor()
@@ -167,7 +167,7 @@ def delete_category(category_id):
 def update_category(category_id, name, emoji, color, type_val):
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        client._update("categories", {"name": name, "emoji": emoji, "color": color, "type": type_val}, category_id)
+        client._update("ory_categories", {"name": name, "emoji": emoji, "color": color, "type": type_val}, category_id)
     else:
         conn = get_connection()
         cursor = conn.cursor()
@@ -182,7 +182,7 @@ def update_category(category_id, name, emoji, color, type_val):
 def get_categories():
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        return client._get("categories", params={"select": "*", "order": "name.asc"})
+        return client._get("ory_categories", params={"select": "*", "order": "name.asc"})
     else:
         conn = get_connection()
         cursor = conn.cursor()
@@ -195,7 +195,7 @@ def get_categories():
 def add_transaction(date_str, category_id, amount, description, time_range='05:00 - 18:15'):
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        client._insert("transactions", {
+        client._insert("ory_transactions", {
             "date": date_str,
             "category_id": category_id,
             "amount": amount,
@@ -215,7 +215,7 @@ def add_transaction(date_str, category_id, amount, description, time_range='05:0
 def delete_transaction(transaction_id):
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        client._delete("transactions", transaction_id)
+        client._delete("ory_transactions", transaction_id)
     else:
         conn = get_connection()
         cursor = conn.cursor()
@@ -226,7 +226,7 @@ def delete_transaction(transaction_id):
 def update_transaction(transaction_id, date_str, category_id, amount, description, time_range):
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        client._update("transactions", {
+        client._update("ory_transactions", {
             "date": date_str,
             "category_id": category_id,
             "amount": amount,
@@ -253,7 +253,7 @@ def get_transactions(limit=None):
         }
         if limit:
             params["limit"] = limit
-        data = client._get("transactions", params=params)
+        data = client._get("ory_transactions", params=params)
         res = []
         for row in data:
             item = {
@@ -297,7 +297,7 @@ def get_transactions(limit=None):
 def add_debt(type_val, amount, name, due_date, status, category_id=None):
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        client._insert("debts", {
+        client._insert("ory_debts", {
             "type": type_val,
             "amount": amount,
             "name": name,
@@ -318,7 +318,7 @@ def add_debt(type_val, amount, name, due_date, status, category_id=None):
 def delete_debt(debt_id):
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        client._delete("debts", debt_id)
+        client._delete("ory_debts", debt_id)
     else:
         conn = get_connection()
         cursor = conn.cursor()
@@ -329,15 +329,15 @@ def delete_debt(debt_id):
 def update_debt_status(debt_id, status):
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        client._update("debts", {"status": status}, debt_id)
+        client._update("ory_debts", {"status": status}, debt_id)
         if status == 'Ödendi':
-            debts = client._get("debts", params={"id": f"eq.{debt_id}"})
+            debts = client._get("ory_debts", params={"id": f"eq.{debt_id}"})
             if debts:
                 debt = debts[0]
                 if debt['category_id']:
                     tx_desc = f"{debt['name']} (Borç Kapatma)"
                     today_str = datetime.now().strftime('%Y-%m-%d')
-                    client._insert("transactions", {
+                    client._insert("ory_transactions", {
                         "date": today_str,
                         "category_id": debt['category_id'],
                         "amount": debt['amount'],
@@ -371,10 +371,10 @@ def update_debt_status(debt_id, status):
 def update_debt(debt_id, type_val, amount, name, due_date, status, category_id=None):
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        debts = client._get("debts", params={"id": f"eq.{debt_id}"})
+        debts = client._get("ory_debts", params={"id": f"eq.{debt_id}"})
         old_status = debts[0]['status'] if debts else 'Bekliyor'
         
-        client._update("debts", {
+        client._update("ory_debts", {
             "type": type_val,
             "amount": amount,
             "name": name,
@@ -387,7 +387,7 @@ def update_debt(debt_id, type_val, amount, name, due_date, status, category_id=N
             if old_status == 'Bekliyor':
                 tx_desc = f"{name} (Borç Kapatma)"
                 today_str = datetime.now().strftime('%Y-%m-%d')
-                client._insert("transactions", {
+                client._insert("ory_transactions", {
                     "date": today_str,
                     "category_id": category_id,
                     "amount": amount,
@@ -442,7 +442,7 @@ def update_debt(debt_id, type_val, amount, name, due_date, status, category_id=N
 def get_debts():
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        data = client._get("debts", params={
+        data = client._get("ory_debts", params={
             "select": "id,type,amount,name,due_date,status,category_id,categories(name,emoji,color)",
             "order": "due_date.asc,id.desc"
         })
@@ -486,11 +486,11 @@ def get_debts():
 def add_or_update_rate_log(date_str, rate):
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        logs = client._get("interest_rate_logs", params={"date": f"eq.{date_str}"})
+        logs = client._get("ory_interest_rate_logs", params={"date": f"eq.{date_str}"})
         if logs:
-            client._update("interest_rate_logs", {"rate": rate}, logs[0]['id'])
+            client._update("ory_interest_rate_logs", {"rate": rate}, logs[0]['id'])
         else:
-            client._insert("interest_rate_logs", {"date": date_str, "rate": rate})
+            client._insert("ory_interest_rate_logs", {"date": date_str, "rate": rate})
     else:
         conn = get_connection()
         cursor = conn.cursor()
@@ -505,9 +505,9 @@ def add_or_update_rate_log(date_str, rate):
 def delete_rate_log(log_id):
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        logs = client._get("interest_rate_logs", params={"select": "id"})
+        logs = client._get("ory_interest_rate_logs", params={"select": "id"})
         if len(logs) > 1:
-            client._delete("interest_rate_logs", log_id)
+            client._delete("ory_interest_rate_logs", log_id)
     else:
         conn = get_connection()
         cursor = conn.cursor()
@@ -520,7 +520,7 @@ def delete_rate_log(log_id):
 def get_rate_logs():
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        return client._get("interest_rate_logs", params={"select": "id,date,rate", "order": "date.desc"})
+        return client._get("ory_interest_rate_logs", params={"select": "id,date,rate", "order": "date.desc"})
     else:
         conn = get_connection()
         cursor = conn.cursor()
@@ -574,15 +574,15 @@ def run_simulation(until_date=None):
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
         # Fetch categories
-        cat_data = client._get("categories", params={"select": "id,name,emoji,color,type"})
+        cat_data = client._get("ory_categories", params={"select": "id,name,emoji,color,type"})
         categories = {row['id']: row for row in cat_data}
         
         # Fetch transactions
-        tx_data = client._get("transactions", params={"select": "id,date,category_id,amount,description", "order": "date.asc,id.asc"})
+        tx_data = client._get("ory_transactions", params={"select": "id,date,category_id,amount,description", "order": "date.asc,id.asc"})
         tx_list = tx_data
         
         # Fetch rate logs
-        rate_data = client._get("interest_rate_logs", params={"select": "date,rate", "order": "date.asc"})
+        rate_data = client._get("ory_interest_rate_logs", params={"select": "date,rate", "order": "date.asc"})
         rate_logs = rate_data
     else:
         conn = get_connection()
@@ -773,7 +773,7 @@ def get_monthly_flow():
         else:
             end_date = f"{current_year:04d}-{current_month_val+1:02d}-01"
             
-        data = client._get("transactions", params={
+        data = client._get("ory_transactions", params={
             "date": [f"gte.{start_date}", f"lt.{end_date}"],
             "select": "amount,categories(type)"
         })
@@ -806,7 +806,7 @@ def get_monthly_flow():
 def get_pending_debts_totals():
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-        data = client._get("debts", params={
+        data = client._get("ory_debts", params={
             "status": "eq.Bekliyor",
             "select": "type,amount"
         })
@@ -2308,7 +2308,7 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
         if edit_tx_id:
             if USE_SUPABASE:
                 client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-                data = client._get("transactions", params={
+                data = client._get("ory_transactions", params={
                     "select": "id,date,category_id,amount,description,time_range,categories(type)",
                     "id": f"eq.{edit_tx_id}"
                 })
@@ -2650,7 +2650,7 @@ elif menu_selection == "🏷️ Kategori Yönetimi":
     if edit_cat_id:
         if USE_SUPABASE:
             client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-            data = client._get("categories", params={"id": f"eq.{edit_cat_id}"})
+            data = client._get("ory_categories", params={"id": f"eq.{edit_cat_id}"})
             if data:
                 edit_cat = data[0]
         else:
@@ -2900,7 +2900,7 @@ elif menu_selection == "🤝 Borç Takip Sistemi":
     if edit_debt_id:
         if USE_SUPABASE:
             client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-            data = client._get("debts", params={"id": f"eq.{edit_debt_id}"})
+            data = client._get("ory_debts", params={"id": f"eq.{edit_debt_id}"})
             if data:
                 edit_debt = data[0]
         else:
