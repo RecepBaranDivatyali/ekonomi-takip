@@ -248,7 +248,7 @@ def get_transactions(limit=None):
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
         params = {
-            "select": "id,date,category_id,amount,description,time_range,categories(name,emoji,color,type)",
+            "select": "id,date,category_id,amount,description,time_range,categories:ory_categories(name,emoji,color,type)",
             "order": "date.desc,id.desc"
         }
         if limit:
@@ -443,7 +443,7 @@ def get_debts():
     if USE_SUPABASE:
         client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
         data = client._get("ory_debts", params={
-            "select": "id,type,amount,name,due_date,status,category_id,categories(name,emoji,color)",
+            "select": "id,type,amount,name,due_date,status,category_id,categories:ory_categories(name,emoji,color)",
             "order": "due_date.asc,id.desc"
         })
         res = []
@@ -775,7 +775,7 @@ def get_monthly_flow():
             
         data = client._get("ory_transactions", params={
             "date": [f"gte.{start_date}", f"lt.{end_date}"],
-            "select": "amount,categories(type)"
+            "select": "amount,categories:ory_categories(type)"
         })
         stats = {'Gelir': 0.0, 'Gider': 0.0}
         for row in data:
@@ -2309,7 +2309,7 @@ elif menu_selection == "📝 İşlem Ekle/Düzenle":
             if USE_SUPABASE:
                 client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
                 data = client._get("ory_transactions", params={
-                    "select": "id,date,category_id,amount,description,time_range,categories(type)",
+                    "select": "id,date,category_id,amount,description,time_range,categories:ory_categories(type)",
                     "id": f"eq.{edit_tx_id}"
                 })
                 if data:
