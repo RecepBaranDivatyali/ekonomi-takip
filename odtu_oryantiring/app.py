@@ -578,7 +578,7 @@ def run_simulation(until_date=None):
         categories = {row['id']: row for row in cat_data}
         
         # Fetch transactions
-        tx_data = client._get("ory_transactions", params={"select": "id,date,category_id,amount,description", "order": "date.asc,id.asc"})
+        tx_data = client._get("ory_transactions", params={"select": "id,date,category_id,amount,description,time_range", "order": "date.asc,id.asc"})
         tx_list = tx_data
         
         # Fetch rate logs
@@ -594,7 +594,7 @@ def run_simulation(until_date=None):
         
         # Fetch transactions
         cursor.execute("""
-            SELECT id, date, category_id, amount, description
+            SELECT id, date, category_id, amount, description, time_range
             FROM transactions
             ORDER BY date ASC, id ASC
         """)
@@ -672,22 +672,31 @@ def run_simulation(until_date=None):
         posted_interest = 0.0
         vault_before_posting = current_vault
         if not is_weekend and accumulated_gross > 0.0:
-            posted_gross = math.floor(accumulated_gross * 100) / 100
-            posted_stopaj = math.floor(posted_gross * 0.175 * 100) / 100
-            posted_interest = math.floor((posted_gross - posted_stopaj) * 100) / 100
+            posted_gross = math.floor((accumulated_gross + 1e-9) * 100) / 100
+            posted_stopaj = math.floor((posted_gross * 0.175 + 1e-9) * 100) / 100
+            posted_interest = math.floor((posted_gross - posted_stopaj + 1e-9) * 100) / 100
             current_vault += posted_interest
             total_interest_earned += posted_interest
             accumulated_gross = 0.0
             
-        # 2. Process all transactions of the day
+        # 2. Process DAY transactions (05:00 - 18:15)
+        day_txs = []
+        night_txs = []
         if curr in tx_by_date:
             for tx in tx_by_date[curr]:
-                if tx['cat_type'] == 'Gelir':
-                    current_vault += tx['amount']
-                    day_income += tx['amount']
+                t_range = tx.get('time_range', '05:00 - 18:15')
+                if t_range == '18:15 - 05:00':
+                    night_txs.append(tx)
                 else:
-                    current_vault -= tx['amount']
-                    day_expense += tx['amount']
+                    day_txs.append(tx)
+                    
+        for tx in day_txs:
+            if tx['cat_type'] == 'Gelir':
+                current_vault += tx['amount']
+                day_income += tx['amount']
+            else:
+                current_vault -= tx['amount']
+                day_expense += tx['amount']
                     
         # 3. Evening Evaluation (18:15)
         if not is_weekend:
@@ -696,9 +705,9 @@ def run_simulation(until_date=None):
             if qualifies:
                 earning_base = max(0.0, current_vault - vadesiz_limit)
                 gross_raw = earning_base * (rate_today / 365.0)
-                gross_truncated = math.floor(gross_raw * 100) / 100
-                stopaj_truncated = math.floor(gross_truncated * 0.175 * 100) / 100
-                daily_interest = math.floor((gross_truncated - stopaj_truncated) * 100) / 100
+                gross_truncated = math.floor((gross_raw + 1e-9) * 100) / 100
+                stopaj_truncated = math.floor((gross_truncated * 0.175 + 1e-9) * 100) / 100
+                daily_interest = math.floor((gross_truncated - stopaj_truncated + 1e-9) * 100) / 100
             else:
                 vadesiz_limit = current_vault
                 earning_base = 0.0
@@ -720,15 +729,24 @@ def run_simulation(until_date=None):
             
             if qualifies:
                 earning_base = max(0.0, current_vault - vadesiz_limit)
-                gross_truncated = math.floor(gross_raw * 100) / 100
-                stopaj_truncated = math.floor(gross_truncated * 0.175 * 100) / 100
-                daily_interest = math.floor((gross_truncated - stopaj_truncated) * 100) / 100
+                gross_truncated = math.floor((gross_raw + 1e-9) * 100) / 100
+                stopaj_truncated = math.floor((gross_truncated * 0.175 + 1e-9) * 100) / 100
+                daily_interest = math.floor((gross_truncated - stopaj_truncated + 1e-9) * 100) / 100
             else:
                 earning_base = 0.0
                 daily_interest = 0.0
                 
         # Accumulate this day's gross interest
         accumulated_gross += gross_raw
+        
+        # 4. Process NIGHT transactions (18:15 - 05:00)
+        for tx in night_txs:
+            if tx['cat_type'] == 'Gelir':
+                current_vault += tx['amount']
+                day_income += tx['amount']
+            else:
+                current_vault -= tx['amount']
+                day_expense += tx['amount']
         
         daily_log.append({
             'date': curr.strftime('%Y-%m-%d'),
@@ -748,9 +766,9 @@ def run_simulation(until_date=None):
     # Pending interest calculation
     pending_net = 0.0
     if accumulated_gross > 0.0:
-        pending_gross = math.floor(accumulated_gross * 100) / 100
-        pending_stopaj = math.floor(pending_gross * 0.175 * 100) / 100
-        pending_net = math.floor((pending_gross - pending_stopaj) * 100) / 100
+        pending_gross = math.floor((accumulated_gross + 1e-9) * 100) / 100
+        pending_stopaj = math.floor((pending_gross * 0.175 + 1e-9) * 100) / 100
+        pending_net = math.floor((pending_gross - pending_stopaj + 1e-9) * 100) / 100
         
     # Ensure values are rounded to 2 decimal places
     current_vault = round(current_vault, 2)
