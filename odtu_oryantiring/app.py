@@ -1879,6 +1879,10 @@ def check_password():
 
     st.markdown("""
         <style>
+        /* Hide sidebar on login screen */
+        [data-testid="stSidebar"] {
+            display: none !important;
+        }
         .login-card-container {
             display: flex;
             justify-content: center;
